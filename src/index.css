@@ -1,0 +1,41 @@
+/* Load Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Lato:wght@300;400;700&family=Courier+Prime&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { @apply font-body bg-cream text-navy; -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, h4, h5 { @apply font-display; }
+}
+
+@layer components {
+  .btn-primary { @apply bg-flamingo text-cream font-body font-bold tracking-widest uppercase text-sm px-8 py-3 transition-all duration-300 hover:bg-flamingo-dark hover:shadow-lg; }
+  .btn-secondary { @apply border-2 border-navy text-navy font-body font-bold tracking-widest uppercase text-sm px-8 py-3 transition-all duration-300 hover:bg-navy hover:text-cream; }
+  .btn-ghost { @apply border-2 border-cream text-cream font-body font-bold tracking-widest uppercase text-sm px-8 py-3 transition-all duration-300 hover:bg-cream hover:text-navy; }
+  .section-container { @apply max-w-6xl mx-auto px-6 md:px-12; }
+  .section-padding { @apply py-20 md:py-28; }
+  .section-divider { @apply block w-16 h-px bg-flamingo mx-auto mt-4 mb-10; }
+  .card { @apply bg-cream-warm rounded shadow-md overflow-hidden transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl; }
+  .form-input { @apply w-full px-4 py-3 border border-navy border-opacity-20 bg-white text-navy font-body focus:outline-none focus:ring-2 focus:ring-flamingo transition-all; }
+  .admin-card { @apply bg-white rounded-lg shadow p-6 mb-6; }
+}
+
+@layer utilities {
+  .tracking-editorial { letter-spacing: 0.2em; }
+  .tracking-title { letter-spacing: 0.08em; }
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #F5F0E8; }
+::-webkit-scrollbar-thumb { background: #E8748A; border-radius: 3px; }
+
+/* Hide scrollbar on overflow-x-auto elements (used for mobile tab bars) */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Ensure tap targets are at least 44px tall on iOS (Apple HIG recommendation) */
+.touch-manipulation { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
