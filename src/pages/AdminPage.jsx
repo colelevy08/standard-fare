@@ -1857,7 +1857,15 @@ const AdminPage = () => {
         const existingManual = items.filter((r) => r.source !== "Google" || !r.id?.toString().startsWith("google-"));
         const merged = [...googleReviews, ...existingManual];
         setItems(merged);
-        setSyncMsg(`Pulled ${googleReviews.length} reviews from Google (${data.rating?.toFixed(1)} stars, ${data.totalReviews} total). Click Save to keep.`);
+        // Auto-save reviews and update aggregate rating
+        await updateData("testimonials", merged);
+        if (data.rating || data.totalReviews) {
+          await updateData("googleRating", {
+            rating: data.rating || siteData.googleRating?.rating || 4.6,
+            count: data.totalReviews || siteData.googleRating?.count || 78,
+          });
+        }
+        setSyncMsg(`Synced ${googleReviews.length} reviews from Google (${data.rating?.toFixed(1)} stars, ${data.totalReviews} total). Saved automatically.`);
       } catch (e) {
         setSyncMsg(`Sync failed: ${e.message}`);
       } finally {
