@@ -71,7 +71,7 @@ export default async function handler(req, res) {
     const placeData = state?.placePage?.data?.placeMetadata;
     const rawReviews = placeData?.reviews || [];
     const overallRating = placeData?.rating || null;
-    const totalReviews = placeData?.numReviews || rawReviews.length;
+    const totalReviews = placeData?.numRatings || placeData?.numReviews || rawReviews.length;
 
     // Normalize into our format — include 4- and 5-star reviews (show real mix)
     const fiveStarReviews = rawReviews

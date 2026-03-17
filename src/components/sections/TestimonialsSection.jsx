@@ -4,10 +4,11 @@
 // Displays Google reviews auto-pulled via /api/google-reviews, with fallback
 // to manually entered reviews from the admin panel.
 // Single scrollable row — max 6 cards, scroll arrows on hover.
+// Click a card to read the full review in a popup modal.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import React, { useRef } from "react";
-import { Star, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Star, ExternalLink, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useSite } from "../../context/AdminContext";
 import useGoogleReviews from "../../hooks/useGoogleReviews";
 
@@ -35,40 +36,72 @@ const StarRating = ({ rating, size = 14 }) => {
   );
 };
 
-const TestimonialCard = ({ review }) => {
-  const hasLink = review.reviewUrl || review.profileUrl;
-  const href = review.reviewUrl || review.profileUrl;
-  const Wrapper = hasLink ? "a" : "div";
-  const linkProps = hasLink
-    ? { href, target: "_blank", rel: "noopener noreferrer" }
-    : {};
+/* ── Review Modal ─────────────────────────────────────────────────────────── */
+const ReviewModal = ({ review, onClose }) => {
+  if (!review) return null;
+  const googleUrl = review.reviewUrl || "https://www.google.com/maps/place/Standard+Fare/reviews";
 
   return (
-    <Wrapper {...linkProps}
-      className={`bg-white rounded-xl p-5 shadow-sm border border-navy border-opacity-5 flex flex-col h-full
-        ${hasLink ? "hover:border-flamingo hover:shadow-md transition-all cursor-pointer group" : ""}`}>
-      <StarRating rating={review.rating} />
-      <p className="font-body text-navy opacity-70 text-sm leading-relaxed mt-3 flex-1 line-clamp-4">
-        &ldquo;{review.text}&rdquo;
-      </p>
-      <div className="mt-3 flex items-center justify-between">
-        <p className="font-body text-navy font-bold text-sm">{review.name}</p>
-        <div className="flex items-center gap-2">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      onClick={onClose}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-navy bg-opacity-60 backdrop-blur-sm" />
+      {/* Modal */}
+      <div className="relative bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose}
+          className="absolute top-4 right-4 text-navy opacity-40 hover:opacity-80 transition-opacity">
+          <X size={20} />
+        </button>
+
+        <StarRating rating={review.rating} size={18} />
+        <p className="font-body text-navy text-base leading-relaxed mt-4">
+          &ldquo;{review.text}&rdquo;
+        </p>
+        <div className="mt-5 flex items-center justify-between">
+          <div>
+            <p className="font-body text-navy font-bold text-sm">{review.name}</p>
+            {review.relativeTime && (
+              <p className="font-body text-navy opacity-40 text-xs mt-0.5">{review.relativeTime}</p>
+            )}
+          </div>
           <span className="font-mono text-xs text-navy opacity-30 uppercase">{review.source || "Google"}</span>
-          {hasLink && (
-            <ExternalLink size={12} className="text-navy opacity-0 group-hover:opacity-40 transition-opacity" />
-          )}
         </div>
+
+        <a href={googleUrl} target="_blank" rel="noopener noreferrer"
+          className="mt-5 flex items-center justify-center gap-2 w-full py-2.5 rounded-lg
+            bg-navy bg-opacity-5 hover:bg-opacity-10 transition-colors text-navy font-body text-sm">
+          <ExternalLink size={14} />
+          View on Google
+        </a>
       </div>
-    </Wrapper>
+    </div>
   );
 };
 
+/* ── Review Card ──────────────────────────────────────────────────────────── */
+const TestimonialCard = ({ review, onClick }) => (
+  <div onClick={onClick}
+    className="bg-white rounded-xl p-5 shadow-sm border border-navy border-opacity-5 flex flex-col h-full
+      hover:border-flamingo hover:shadow-md transition-all cursor-pointer group">
+    <StarRating rating={review.rating} />
+    <p className="font-body text-navy opacity-70 text-sm leading-relaxed mt-3 flex-1 line-clamp-4">
+      &ldquo;{review.text}&rdquo;
+    </p>
+    <div className="mt-3 flex items-center justify-between">
+      <p className="font-body text-navy font-bold text-sm">{review.name}</p>
+      <span className="font-mono text-xs text-navy opacity-30 uppercase">{review.source || "Google"}</span>
+    </div>
+  </div>
+);
+
+/* ── Section ──────────────────────────────────────────────────────────────── */
 const TestimonialsSection = () => {
   const { siteData } = useSite();
   const { reviews: googleReviews, rating, totalReviews } = useGoogleReviews();
   const manualReviews = siteData.testimonials || [];
   const scrollRef = useRef(null);
+  const [selectedReview, setSelectedReview] = useState(null);
 
   // Use Google reviews if available, otherwise fall back to manual
   const reviews = googleReviews.length > 0 ? googleReviews : manualReviews;
@@ -115,7 +148,7 @@ const TestimonialsSection = () => {
             {reviews.slice(0, 6).map((review) => (
               <div key={review.id}
                 className="flex-shrink-0 w-[280px] sm:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)] min-w-[260px] snap-start">
-                <TestimonialCard review={review} />
+                <TestimonialCard review={review} onClick={() => setSelectedReview(review)} />
               </div>
             ))}
           </div>
@@ -127,6 +160,9 @@ const TestimonialsSection = () => {
           </button>
         </div>
       </div>
+
+      {/* Full review popup */}
+      <ReviewModal review={selectedReview} onClose={() => setSelectedReview(null)} />
     </section>
   );
 };
