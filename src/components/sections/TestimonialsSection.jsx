@@ -11,13 +11,29 @@ import { Star, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 import { useSite } from "../../context/AdminContext";
 import useGoogleReviews from "../../hooks/useGoogleReviews";
 
-const StarRating = ({ rating }) => (
-  <div className="flex gap-0.5">
-    {Array.from({ length: rating }, (_, i) => (
-      <Star key={i} size={14} className="fill-flamingo text-flamingo" />
-    ))}
-  </div>
-);
+const StarRating = ({ rating, size = 14 }) => {
+  const full = Math.floor(rating);
+  const partial = rating - full;
+  const empty = 5 - full - (partial > 0 ? 1 : 0);
+  return (
+    <div className="flex gap-0.5">
+      {Array.from({ length: full }, (_, i) => (
+        <Star key={`f${i}`} size={size} className="fill-flamingo text-flamingo" />
+      ))}
+      {partial > 0 && (
+        <span key="p" className="relative inline-block" style={{ width: size, height: size }}>
+          <Star size={size} className="text-flamingo opacity-30 absolute inset-0" />
+          <span className="absolute inset-0 overflow-hidden" style={{ width: `${partial * 100}%` }}>
+            <Star size={size} className="fill-flamingo text-flamingo" />
+          </span>
+        </span>
+      )}
+      {Array.from({ length: empty }, (_, i) => (
+        <Star key={`e${i}`} size={size} className="text-flamingo opacity-30" />
+      ))}
+    </div>
+  );
+};
 
 const TestimonialCard = ({ review }) => {
   const hasLink = review.reviewUrl || review.profileUrl;
@@ -74,12 +90,12 @@ const TestimonialsSection = () => {
           </p>
           <h2 className="font-display text-navy text-3xl md:text-4xl">Guest Reviews</h2>
           <span className="block w-16 h-px bg-flamingo mx-auto mt-6 mb-4" />
-          {/* Show aggregate rating if available from Google */}
+          {/* Show aggregate rating from Google */}
           {rating && totalReviews > 0 && (
             <div className="flex items-center justify-center gap-3">
-              <StarRating rating={Math.round(rating)} />
+              <StarRating rating={rating} size={16} />
               <span className="font-body text-sm text-navy opacity-50">
-                {rating.toFixed(1)} stars from {totalReviews} Google reviews
+                {rating.toFixed(1)} from {totalReviews} Google review{totalReviews !== 1 ? "s" : ""}
               </span>
             </div>
           )}

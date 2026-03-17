@@ -82,9 +82,9 @@ export default async function handler(req, res) {
     const overallRating = placeData?.rating || null;
     const totalReviews = placeData?.numReviews || rawReviews.length;
 
-    // Normalize into our format — only 5-star reviews
+    // Normalize into our format — include 4- and 5-star reviews (show real mix)
     const fiveStarReviews = rawReviews
-      .filter((r) => r.rating === 5 && r.reviewText && r.reviewText.length > 0)
+      .filter((r) => r.rating >= 4 && r.reviewText && r.reviewText.length > 0)
       .map((r) => {
         // Calculate relative time
         let relativeTime = "";
