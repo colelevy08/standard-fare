@@ -33,17 +33,47 @@ export default async function handler(req, res) {
 
     const html = await response.text();
 
-    // Extract the __MOBX_STATE__ JSON from the page
-    const stateMatch = html.match(/window\.__MOBX_STATE__\s*=\s*({.+?});?\s*<\/script>/s);
+    // Extract the __MOBX_STATE__ JSON from the page.
+    // Use a greedy match to capture the entire JSON object (it's large with nested braces).
+    const stateMatch = html.match(/window\.__MOBX_STATE__\s*=\s*({.+});?\s*<\/script>/s);
     if (!stateMatch) {
       throw new Error("Could not find review data in page source");
     }
 
+    // The greedy match may grab too much — trim trailing content after the JSON.
+    // Find the balanced end of the JSON object by parsing incrementally.
     let state;
+    const raw = stateMatch[1];
     try {
-      state = JSON.parse(stateMatch[1]);
-    } catch (parseErr) {
-      throw new Error("Failed to parse review data JSON");
+      state = JSON.parse(raw);
+    } catch (_) {
+      // Greedy regex may have grabbed extra content after the JSON.
+      // Try truncating at common boundaries.
+      let parsed = null;
+      for (const sep of [";\n", ";\r", ";  ", ";</script"]) {
+        const idx = raw.indexOf(sep);
+        if (idx > 0) {
+          try { parsed = JSON.parse(raw.substring(0, idx)); break; } catch (_e) { /* try next */ }
+        }
+      }
+      if (!parsed) {
+        // Last resort: find matching closing brace by counting depth
+        let depth = 0, end = -1, inStr = false, esc = false;
+        for (let i = 0; i < raw.length; i++) {
+          const c = raw[i];
+          if (esc) { esc = false; continue; }
+          if (c === '\\' && inStr) { esc = true; continue; }
+          if (c === '"') { inStr = !inStr; continue; }
+          if (inStr) continue;
+          if (c === '{' || c === '[') depth++;
+          if (c === '}' || c === ']') { depth--; if (depth === 0) { end = i + 1; break; } }
+        }
+        if (end > 0) {
+          try { parsed = JSON.parse(raw.substring(0, end)); } catch (_e2) { /* give up */ }
+        }
+      }
+      if (!parsed) throw new Error("Failed to parse review data JSON");
+      state = parsed;
     }
 
     // Navigate to the reviews array
