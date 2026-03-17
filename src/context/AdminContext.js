@@ -76,7 +76,10 @@ const deepMerge = (saved) => {
     merch:         saved.merch         ?? defaultSiteData.merch,
     bottles:       saved.bottles       ?? defaultSiteData.bottles,
     specials:      saved.specials      ?? defaultSiteData.specials,
-    testimonials:  saved.testimonials  ?? defaultSiteData.testimonials,
+    // Always use the real Google reviews from googleReviews.js as the default
+    // pool. Admin customizations are saved via updateData("testimonials", ...).
+    // Old seed/fake reviews in Supabase are replaced on version bump.
+    testimonials:  defaultSiteData.testimonials,
     smsClub:       saved.smsClub       ? { ...defaultSiteData.smsClub, ...saved.smsClub } : defaultSiteData.smsClub,
     newsletter:    saved.newsletter    ?? defaultSiteData.newsletter,
     popularNow:    saved.popularNow    ? { ...defaultSiteData.popularNow, ...saved.popularNow } : defaultSiteData.popularNow,
