@@ -8,6 +8,8 @@
 // To add a new section: add it here AND update AdminContext + the relevant page.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import googleReviews from "./googleReviews";
+
 // SVG initials badge for outlets that share a favicon domain (e.g. Substack pubs)
 const pressInitials = (text, bg = "#1B2B4B") => {
   const letters = text.split(/[\s+&]+/).filter(Boolean).map(w => w[0]).join("").slice(0, 2).toUpperCase();
@@ -112,50 +114,9 @@ const defaultSiteData = {
   ],
 
   // ── TESTIMONIALS ────────────────────────────────────────────────────────────
-  // Real Google reviews — auto-refreshed by /api/google-reviews in production.
-  // These are the actual reviews as fallback when the scraper hasn't run yet.
-  testimonials: [
-    {
-      id: "google-kate", name: "Kate Esposito", source: "Google", rating: 5,
-      reviewUrl: "https://www.google.com/maps/place/Standard+Fare/reviews",
-      text: "Every single detail was thought out-right down to the bathroom! Was even fun ordering a coca-cola! We absolutely loved our meals, and had an amazing time chatting with the staff. Everyone around us was having the best time pointing out different details around the restaurant. Pork chop and meatloaf were insanely delicious and my husband loved his milkshake! But don't sleep on the milk and cookies!! Thank you for an awesome dinner! New favorite restaurant!",
-    },
-    {
-      id: "google-grant", name: "Grant Willsea", source: "Google", rating: 5,
-      reviewUrl: "https://www.google.com/maps/place/Standard+Fare/reviews",
-      text: "Excellent new spot in Saratoga by the fantastic purveyors of Bocage Champagne Bar. Great food, good cocktails, and a lovely vibe inside of a cozy little spot on Phila. Too full for dessert - but we will be going back for it because it looked amazing! Cake slices the size of your face, sundaes and milkshakes that looked delicious.",
-    },
-    {
-      id: "google-erin", name: "Erin Leary", source: "Google", rating: 5,
-      reviewUrl: "https://www.google.com/maps/place/Standard+Fare/reviews",
-      text: "Food is top notch, starters to desserts, cocktails to cakes. We loved some things enough we ordered repeats, and by the end\u2026we've never seen our kids not make it through their (humongous, delicious) desserts! Fun, festive, delicious. And our kids say \u201cpeople are very, very, very nice here.\u201d Oinkers, calamari, fries, shrimp & grits, lobster cobb, shakes and cakes.",
-    },
-    {
-      id: "google-danielle", name: "singingdanielle", source: "Google", rating: 5,
-      reviewUrl: "https://www.google.com/maps/place/Standard+Fare/reviews",
-      text: "There's nothing standard about Standard Fare!!! It's the perfect mix of bougie and fun- where elevated meets energetic & every little detail feels like a love letter to good taste. The food- Not a single miss. Standout stars of the night: the lobster rolls, lil oinkers, and the \u201cGo Shawty It\u2019s Your Birthday\u201d milkshake- insane. The vibe was energetic, playful, and full of life. We were in the middle of dinner already talking about when we're coming back.",
-    },
-    {
-      id: "google-lyla", name: "lyla pierre", source: "Google", rating: 5,
-      reviewUrl: "https://www.google.com/maps/place/Standard+Fare/reviews",
-      text: "Everyone is so kind and willing to help and give the best advice for what to get with your food. The food is spectacular and atmosphere is very welcoming.",
-    },
-    {
-      id: "google-dan", name: "Dan Cohen", source: "Google", rating: 5,
-      reviewUrl: "https://www.google.com/maps/place/Standard+Fare/reviews",
-      text: "Amazing new addition to the Saratoga nightlife scene. Everything on the menu was unique and well prepared. Owners Clark & Zac know how to take care of their guests and elevate an experience. Bathrooms were super fun and cool. We will definitely be back often!",
-    },
-    {
-      id: "google-morgan", name: "Morgan Daly", source: "Google", rating: 5,
-      reviewUrl: "https://www.google.com/maps/place/Standard+Fare/reviews",
-      text: "We had the best time at Standard Fare! The food and vibes were immaculate. I absolutely fell in love with the lobster rolls and meatloaf. The entire menu is an absolute hit so you cannot go wrong! Our server, Terri, was such a gem! She took amazing care of us and is such a genuinely amazing human. We will be back ASAP!!!",
-    },
-    {
-      id: "google-jen", name: "Jen Holcomb", source: "Google", rating: 5,
-      reviewUrl: "https://www.google.com/maps/place/Standard+Fare/reviews",
-      text: "Absolutely adorable! Food was delicious, drink were lovely, decor is gorgeous! Such a fun addition to Phila!",
-    },
-  ],
+  // Real Google reviews (67 five-star) — imported from data/googleReviews.js.
+  // Auto-refreshed by /api/google-reviews in production; these are fallback.
+  testimonials: googleReviews,
 
   // ── SMS TEXT CLUB ───────────────────────────────────────────────────────────
   smsClub: {

@@ -110,7 +110,14 @@ const TestimonialsSection = () => {
   const totalReviews = adminCount  ?? scrapedTotal;
 
   // Use Google reviews if available, otherwise fall back to manual
-  const reviews = googleReviews.length > 0 ? googleReviews : manualReviews;
+  const rawReviews = googleReviews.length > 0 ? googleReviews : manualReviews;
+
+  // Soft-sort: reviews mentioning key staff float to front (not obvious to visitors)
+  const reviews = [...rawReviews].sort((a, b) => {
+    const aP = (a._mentionsCole || /\bcole\b/i.test(a.text)) ? 1 : 0;
+    const bP = (b._mentionsCole || /\bcole\b/i.test(b.text)) ? 1 : 0;
+    return bP - aP;
+  });
 
   if (reviews.length === 0) return null;
 
@@ -151,7 +158,7 @@ const TestimonialsSection = () => {
             className="flex gap-4 sm:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory
               scrollbar-hide pb-2 -mx-1 px-1"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-            {reviews.slice(0, 6).map((review) => (
+            {reviews.slice(0, 12).map((review) => (
               <div key={review.id}
                 className="flex-shrink-0 w-[280px] sm:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)] min-w-[260px] snap-start">
                 <TestimonialCard review={review} onClick={() => setSelectedReview(review)} />
