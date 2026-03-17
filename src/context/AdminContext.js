@@ -7,7 +7,7 @@ import supabase from "../lib/supabase";
 
 const STORAGE_KEY    = "standard_fare_site_data";
 const VERSION_KEY    = "standard_fare_data_version";
-const DATA_VERSION   = 11; // ← bumped: chef name fix + blog authorRole field
+const DATA_VERSION   = 12; // ← bumped: add hoursOverride, weeklyFeatures, stockPhotos, faq to Supabase merge
 const SUPABASE_TABLE = "site_content";
 const SUPABASE_ROW   = 1;
 
@@ -115,6 +115,9 @@ const deepMerge = (saved) => {
       const newDefaults = defaultSiteData.events.filter((e) => !savedIds.has(e.id));
       return [...savedEvents, ...newDefaults];
     })(),
+    hoursOverride:   saved.hoursOverride   ? { ...defaultSiteData.hoursOverride,   ...saved.hoursOverride   } : defaultSiteData.hoursOverride,
+    weeklyFeatures:  saved.weeklyFeatures  ? { ...defaultSiteData.weeklyFeatures,  ...saved.weeklyFeatures  } : defaultSiteData.weeklyFeatures,
+    stockPhotos:     saved.stockPhotos     ? { ...defaultSiteData.stockPhotos,     ...saved.stockPhotos     } : defaultSiteData.stockPhotos,
     faq:      saved.faq      ?? defaultSiteData.faq,
     prints:   saved.prints   ?? defaultSiteData.prints,
     hours:    saved.hours    ?? defaultSiteData.hours,

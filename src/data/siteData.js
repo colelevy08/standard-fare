@@ -950,6 +950,13 @@ const defaultSiteData = {
     bocage: "https://www.instagram.com/bocagechampagnebar/",
   },
 
+  // ── STOCK PHOTOS ─────────────────────────────────────────────────────────
+  // Admin-managed pool of stock/filler photos used when events lack custom images.
+  // Overrides the defaults in data/eventPhotos.js.
+  stockPhotos: {
+    events: [], // empty = use built-in 50-photo pool from eventPhotos.js
+  },
+
   // ── FAQ ───────────────────────────────────────────────────────────────────
   faq: [
     { id: 1, question: "What is the dress code?", answer: "We welcome smart casual attire. While there's no strict dress code, we ask that guests refrain from wearing athletic wear, flip-flops, or beach attire.", category: "Dining" },
