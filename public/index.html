@@ -10,18 +10,88 @@
     <meta name="description" content="Creative American dining at 21 Phila St in Saratoga Springs, NY. Imaginative brunch and dinner menus, craft cocktails, ticketed events, and an in-house art gallery." />
     <meta name="keywords" content="Standard Fare, Saratoga Springs restaurant, American dining, brunch, dinner, cocktails, farm to table" />
 
-    <!-- Open Graph / Social Sharing -->
+    <!-- Open Graph / Social Sharing (iMessage, Instagram, Facebook, Twitter) -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://www.standardfaresaratoga.com/" />
-    <meta property="og:title" content="Standard Fare | Creative American Dining · Saratoga Springs" />
-    <meta property="og:description" content="Imaginative brunch and dinner in the heart of downtown Saratoga. Reserve your table today." />
+    <meta property="og:url" content="https://standard-fare-ten.vercel.app/" />
+    <meta property="og:site_name" content="Standard Fare" />
+    <meta property="og:title" content="Standard Fare" />
+    <meta property="og:description" content="Creative American Dining" />
+    <meta property="og:image" content="https://standard-fare-ten.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Standard Fare — Creative American Dining" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Standard Fare" />
+    <meta name="twitter:description" content="Creative American Dining" />
+    <meta name="twitter:image" content="https://standard-fare-ten.vercel.app/og-image.png" />
 
-    <!-- Favicon placeholder — replace with actual favicon -->
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <!-- Flamingo favicon + apple touch icon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="192x192" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
 
     <!-- Google Fonts preconnect for faster font loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Google Analytics 4 — replace G-XXXXXXXXXX with your real measurement ID -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=%REACT_APP_GA_MEASUREMENT_ID%"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '%REACT_APP_GA_MEASUREMENT_ID%');
+    </script>
+    <!-- JSON-LD Structured Data for Google Rich Results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Restaurant",
+      "name": "Standard Fare",
+      "image": "https://standard-fare-ten.vercel.app/og-image.png",
+      "url": "https://www.standardfaresaratoga.com",
+      "telephone": "(518) 450-0876",
+      "email": "hello@standardfaresaratoga.com",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "21 Phila St",
+        "addressLocality": "Saratoga Springs",
+        "addressRegion": "NY",
+        "postalCode": "12866",
+        "addressCountry": "US"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 43.0805865,
+        "longitude": -73.7848695
+      },
+      "openingHoursSpecification": [
+        { "@type": "OpeningHoursSpecification", "dayOfWeek": "Tuesday", "opens": "11:30", "closes": "21:00" },
+        { "@type": "OpeningHoursSpecification", "dayOfWeek": "Wednesday", "opens": "11:30", "closes": "21:00" },
+        { "@type": "OpeningHoursSpecification", "dayOfWeek": "Thursday", "opens": "11:30", "closes": "21:00" },
+        { "@type": "OpeningHoursSpecification", "dayOfWeek": "Friday", "opens": "11:30", "closes": "22:00" },
+        { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "10:00", "closes": "22:00" },
+        { "@type": "OpeningHoursSpecification", "dayOfWeek": "Sunday", "opens": "10:00", "closes": "21:00" }
+      ],
+      "servesCuisine": "Creative American",
+      "priceRange": "$$-$$$",
+      "acceptsReservations": "True",
+      "menu": "https://www.standardfaresaratoga.com/menu",
+      "hasMenu": {
+        "@type": "Menu",
+        "name": "Standard Fare Menu",
+        "url": "https://www.standardfaresaratoga.com/menu"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5.0",
+        "reviewCount": "50",
+        "bestRating": "5"
+      },
+      "sameAs": [
+        "https://www.instagram.com/standardfaresaratoga/"
+      ]
+    }
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

@@ -1,26 +1,42 @@
 # README-TOAST.md
-# Connecting Standard Fare Events & Prints to Toast POS
+# Connecting Standard Fare to Toast POS
 
-This guide walks through how to sell **event tickets** and **artist prints** directly
-on the Standard Fare website — with all sales appearing inside your existing Toast
-account alongside in-person restaurant sales.
+This guide walks through how to sell **event tickets**, **artist paintings**,
+**wine bottles**, and **branded merchandise** directly on the Standard Fare
+website — with all sales appearing inside your existing Toast account alongside
+in-person restaurant sales.
 
 ---
 
 ## How It Works
 
-When a customer clicks "Get Tickets" or "Purchase Print" on the website, they are
-sent to your **Toast Online Ordering** page for that specific product.
+The website has **two independent cart systems**, both fulfilled through Toast:
+
+### Shop Cart (Bottles, Paintings, Merch, Event Tickets)
+Guests can add multiple items and check out in a single transaction.
+Orders are submitted to Toast via the `/api/toast-order` endpoint.
+Paintings enforce stock limits (1 per original work). Sold-out items cannot be added.
+
+### Pickup Cart (Food Orders)
+Guests browse the full menu (brunch, dinner, dessert) on the `/order` page, add items
+to a separate pickup-only cart, fill in their details, and submit. The order is sent to
+Toast with `orderType: "pickup"` — payment is collected at the restaurant.
 
 Toast handles:
 - Payment processing (credit/debit, Apple Pay, Google Pay)
 - Order confirmation emails to the customer
 - Sales reporting inside your Toast dashboard
 - Refund processing if needed
+- Inventory/stock sync (once API credentials are connected)
 
 The website handles:
-- Displaying event/print info
-- Routing the customer to the correct Toast product
+- Displaying all product info with photos, pricing, and variants
+- Two independent carts with quantity controls and stock enforcement
+- Checkout forms collecting customer name, email, phone, and order notes
+- Submitting orders to Toast for fulfillment
+
+Until Toast credentials are configured, the checkout shows a "Call to Order"
+fallback so guests can still place orders by phone.
 
 ---
 

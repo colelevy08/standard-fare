@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState } from "react";
-import { X, ExternalLink } from "lucide-react";
+import { X, ExternalLink, Mic, ChefHat } from "lucide-react";
 import PageLayout from "../components/layout/PageLayout";
 import { useSite } from "../context/AdminContext";
 
@@ -107,6 +107,45 @@ const BioModal = ({ member, onClose }) => {
                 {para}
               </p>
             ))}
+
+            {/* Podcast link — Zac only */}
+            {member.name === "Zac Denham" && (
+              <div className="mt-6 border-t border-cream border-opacity-10 pt-5">
+                <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">Listen</p>
+                <a href="https://open.spotify.com/show/50jZNqIDQh9BZfRvmkYNwX"
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-3 bg-cream bg-opacity-5 border border-cream border-opacity-15
+                    rounded-lg px-4 py-3 group/pod hover:border-flamingo hover:bg-opacity-10 transition-all">
+                  <Mic size={18} className="text-flamingo flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-cream text-sm group-hover/pod:text-flamingo-light transition-colors">
+                      Off Track Saratoga Podcast
+                    </p>
+                    <p className="font-body text-cream opacity-50 text-xs mt-0.5">
+                      Co-hosted with Emmy Award-winning journalist Noel McLaren
+                    </p>
+                  </div>
+                  <ExternalLink size={13} className="text-flamingo opacity-40 group-hover/pod:opacity-80 transition-opacity flex-shrink-0" />
+                </a>
+                <div className="flex gap-3 mt-2">
+                  <a href="https://podcasts.apple.com/us/podcast/off-track-saratoga-podcast/id1880556768"
+                    target="_blank" rel="noopener noreferrer"
+                    className="font-body text-cream opacity-40 text-xs hover:text-flamingo hover:opacity-100 transition-all">
+                    Apple Podcasts
+                  </a>
+                  <a href="https://open.spotify.com/show/50jZNqIDQh9BZfRvmkYNwX"
+                    target="_blank" rel="noopener noreferrer"
+                    className="font-body text-cream opacity-40 text-xs hover:text-flamingo hover:opacity-100 transition-all">
+                    Spotify
+                  </a>
+                  <a href="https://music.amazon.com/podcasts/bc0c5413-1a50-4e3c-89c7-fa4cf6d165ee"
+                    target="_blank" rel="noopener noreferrer"
+                    className="font-body text-cream opacity-40 text-xs hover:text-flamingo hover:opacity-100 transition-all">
+                    Amazon Music
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -212,29 +251,55 @@ const TeamPage = () => {
             ))}
           </div>
 
+          {/* Executive Chef */}
+          <div className="mt-16 max-w-2xl mx-auto">
+            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-6 text-center">
+              In the Kitchen
+            </p>
+            <div className="bg-navy rounded-2xl overflow-hidden shadow-xl">
+              <div className="flex flex-col sm:flex-row">
+                <div className="sm:w-64 h-64 sm:h-auto bg-navy-light flex items-center justify-center flex-shrink-0">
+                  <div className="w-28 h-28 rounded-full bg-flamingo bg-opacity-20 flex items-center justify-center">
+                    <ChefHat size={48} className="text-flamingo" />
+                  </div>
+                </div>
+                <div className="p-7 flex-1">
+                  <h3 className="font-display text-cream text-2xl mb-1">Chef Joe Michaud</h3>
+                  <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4">
+                    Executive Chef
+                  </p>
+                  <p className="font-body text-cream opacity-70 text-sm leading-relaxed">
+                    {siteData?.chef?.bio ||
+                      "Chef Joe Michaud brings a refined yet creative approach to American cuisine at Standard Fare. With a deep respect for seasonal ingredients and classic technique, Joe crafts menus that balance comfort and imagination — setting the standard for every plate that leaves the kitchen."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Bocage connection */}
           <div className="mt-16 text-center">
             <p className="font-body text-navy opacity-60 text-sm mb-4">
               Clark and Zac are also the founding partners of
             </p>
             <a
-              href="https://www.bocagechampagnebar.com/"
+              href="https://www.instagram.com/bocagechampagnebar/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 border border-navy border-opacity-20
-                         rounded-lg px-6 py-4 group hover:border-flamingo hover:shadow-md
+              className="inline-flex items-center gap-3 border border-gold border-opacity-30
+                         rounded-lg px-6 py-4 group hover:border-gold hover:shadow-md
                          transition-all duration-300"
             >
               <span className="text-2xl">🥂</span>
               <div className="text-left">
-                <p className="font-display text-navy text-base group-hover:text-flamingo transition-colors">
+                <p className="font-display text-navy text-base group-hover:text-gold transition-colors">
                   Bocage Champagne Bar
                 </p>
                 <p className="font-body text-navy opacity-50 text-xs">
                   10 Phila St · Saratoga Springs
                 </p>
               </div>
-              <ExternalLink size={14} className="text-navy opacity-30 group-hover:opacity-60 transition-opacity" />
+              <ExternalLink size={14} className="text-gold opacity-40 group-hover:opacity-80 transition-opacity" />
             </a>
           </div>
         </div>

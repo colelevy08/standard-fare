@@ -1,19 +1,19 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // context/AdminContext.js
 // ─────────────────────────────────────────────────────────────────────────────
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import defaultSiteData from "../data/siteData";
 import supabase from "../lib/supabase";
 
 const STORAGE_KEY    = "standard_fare_site_data";
 const VERSION_KEY    = "standard_fare_data_version";
-const DATA_VERSION   = 6; // ← bumped: nuked bad Supabase data, defense-in-depth URL validation
+const DATA_VERSION   = 11; // ← bumped: chef name fix + blog authorRole field
 const SUPABASE_TABLE = "site_content";
 const SUPABASE_ROW   = 1;
 
 // Hardcoded fallback passwords — used only if siteData.settings has none yet
 const DEFAULT_ADMIN_PASSWORD   = "zacnclark4evr<3";
-const DEFAULT_PREVIEW_PASSWORD = "standardfare2026";
+const DEFAULT_PREVIEW_PASSWORD = "sf26";
 
 const AdminContext = createContext(undefined);
 
@@ -66,11 +66,56 @@ const deepMerge = (saved) => {
       ...savedAbout,
       imageUrl: aboutImageUrl,
       team,
+      // Preserve bocageUrl — fall back to default if blank or pointing to broken domain
+      bocageUrl: (savedAbout.bocageUrl && !savedAbout.bocageUrl.includes("bocagechampagnebar.com"))
+        ? savedAbout.bocageUrl
+        : defaultSiteData.about.bocageUrl,
     },
     heroSlides,
     gallery,
-    press:    saved.press    ?? defaultSiteData.press,
-    events:   saved.events   ?? defaultSiteData.events,
+    merch:         saved.merch         ?? defaultSiteData.merch,
+    bottles:       saved.bottles       ?? defaultSiteData.bottles,
+    specials:      saved.specials      ?? defaultSiteData.specials,
+    testimonials:  saved.testimonials  ?? defaultSiteData.testimonials,
+    smsClub:       saved.smsClub       ? { ...defaultSiteData.smsClub, ...saved.smsClub } : defaultSiteData.smsClub,
+    newsletter:    saved.newsletter    ?? defaultSiteData.newsletter,
+    popularNow:    saved.popularNow    ? { ...defaultSiteData.popularNow, ...saved.popularNow } : defaultSiteData.popularNow,
+    instagramFeed: saved.instagramFeed ?? defaultSiteData.instagramFeed,
+    // Merge blog: keep saved posts, add any new defaults not already present (by id).
+    blog: (() => {
+      const savedBlog = saved.blog ?? [];
+      if (savedBlog.length === 0) return defaultSiteData.blog;
+      const savedIds = new Set(savedBlog.map((p) => p.id));
+      const newDefaults = defaultSiteData.blog.filter((p) => !savedIds.has(p.id));
+      return [...savedBlog, ...newDefaults];
+    })(),
+    seasonalCountdown: saved.seasonalCountdown ? { ...defaultSiteData.seasonalCountdown, ...saved.seasonalCountdown } : defaultSiteData.seasonalCountdown,
+    emailMarketing:    saved.emailMarketing    ? { ...defaultSiteData.emailMarketing,    ...saved.emailMarketing    } : defaultSiteData.emailMarketing,
+    privateEvents:     saved.privateEvents     ? { ...defaultSiteData.privateEvents,     ...saved.privateEvents     } : defaultSiteData.privateEvents,
+    giftCards:         saved.giftCards         ? { ...defaultSiteData.giftCards,         ...saved.giftCards         } : defaultSiteData.giftCards,
+    // Merge press: keep saved, add any new defaults not already present (by id).
+    // Always refresh logos from defaults so favicon-service URLs replace old CDN ones.
+    press: (() => {
+      const savedPress = saved.press ?? [];
+      if (savedPress.length === 0) return defaultSiteData.press;
+      const defaultById = Object.fromEntries(defaultSiteData.press.map((p) => [p.id, p]));
+      const merged = savedPress.map((p) => {
+        const def = defaultById[p.id];
+        return def ? { ...p, logo: def.logo } : p;
+      });
+      const savedIds = new Set(savedPress.map((p) => p.id));
+      const newDefaults = defaultSiteData.press.filter((p) => !savedIds.has(p.id));
+      return [...merged, ...newDefaults];
+    })(),
+    // Merge events: keep saved events, add any new defaults not already present (by id)
+    events: (() => {
+      const savedEvents = saved.events ?? [];
+      if (savedEvents.length === 0) return defaultSiteData.events;
+      const savedIds = new Set(savedEvents.map((e) => e.id));
+      const newDefaults = defaultSiteData.events.filter((e) => !savedIds.has(e.id));
+      return [...savedEvents, ...newDefaults];
+    })(),
+    faq:      saved.faq      ?? defaultSiteData.faq,
     prints:   saved.prints   ?? defaultSiteData.prints,
     hours:    saved.hours    ?? defaultSiteData.hours,
     menus:    saved.menus
@@ -109,6 +154,10 @@ export const AdminProvider = ({ children }) => {
   const [dbReady,    setDbReady]    = useState(false);
   const [dbLoading,  setDbLoading]  = useState(!!supabase); // true while initial fetch runs
   const [dbError,    setDbError]    = useState(null);
+  const [canUndo,    setCanUndo]    = useState(false);
+  const [draftMode,  setDraftMode]  = useState(false);
+  const [hasDraft,   setHasDraft]   = useState(false);
+  const prevDataRef = useRef(null);
 
   // ── Derived passwords — live from siteData so changes persist immediately ─
   const adminPassword   = siteData.settings?.adminPassword   || DEFAULT_ADMIN_PASSWORD;
@@ -165,9 +214,19 @@ export const AdminProvider = ({ children }) => {
 
   // ── updateData ────────────────────────────────────────────────────────────
   const updateData = async (section, value) => {
+    // Snapshot for undo (1 level)
+    prevDataRef.current = { ...siteData };
+    setCanUndo(true);
+
     const updated = { ...siteData, [section]: value };
     setSiteData(updated);
     saveLocal(updated);
+
+    // In draft mode, only save locally — don't push to Supabase until publish
+    if (draftMode) {
+      setHasDraft(true);
+      return;
+    }
 
     if (supabase) {
       try {
@@ -179,6 +238,29 @@ export const AdminProvider = ({ children }) => {
         console.warn("Supabase save failed:", e.message);
       }
     }
+  };
+
+  // ── Draft/Publish ──────────────────────────────────────────────────────
+  const publishDraft = async () => {
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from(SUPABASE_TABLE)
+          .upsert({ id: SUPABASE_ROW, content: siteData }, { onConflict: "id" });
+        if (error) throw new Error(error.message);
+      } catch (e) {
+        console.warn("Supabase publish failed:", e.message);
+      }
+    }
+    setHasDraft(false);
+    setDraftMode(false);
+  };
+
+  const discardDraft = async () => {
+    // Reload from Supabase to revert local changes
+    setDraftMode(false);
+    setHasDraft(false);
+    await loadFromSupabase();
   };
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -200,6 +282,23 @@ export const AdminProvider = ({ children }) => {
     await updateData("settings", updatedSettings);
   };
 
+  // ── Undo last save ───────────────────────────────────────────────────────
+  const undo = async () => {
+    if (!prevDataRef.current) return;
+    const prev = prevDataRef.current;
+    setSiteData(prev);
+    saveLocal(prev);
+    setCanUndo(false);
+    prevDataRef.current = null;
+    if (supabase) {
+      try {
+        await supabase
+          .from(SUPABASE_TABLE)
+          .upsert({ id: SUPABASE_ROW, content: prev }, { onConflict: "id" });
+      } catch (e) { console.warn("Supabase undo failed:", e.message); }
+    }
+  };
+
   const resetToDefaults = () => { setSiteData(defaultSiteData); saveLocal(defaultSiteData); };
 
   return (
@@ -211,6 +310,8 @@ export const AdminProvider = ({ children }) => {
       resetToDefaults,
       dbReady, dbLoading, dbError,
       retrySupabase: loadFromSupabase,
+      canUndo, undo,
+      draftMode, setDraftMode, hasDraft, publishDraft, discardDraft,
     }}>
       {children}
     </AdminContext.Provider>

@@ -14,6 +14,7 @@ import React, { useRef, useState } from "react";
 import { Instagram, X, ExternalLink, ImageOff } from "lucide-react";
 import PageLayout from "../components/layout/PageLayout";
 import { useSite } from "../context/AdminContext";
+import useInstagramFeed from "../hooks/useInstagramFeed";
 
 // Detect media type from URL or stored type field
 const getMediaType = (item) => {
@@ -146,8 +147,10 @@ const GalleryCard = ({ item, onClick }) => {
 
 // ── Gallery Page ──────────────────────────────────────────────────────────
 const GalleryPage = () => {
-  const { siteData } = useSite();
+  const { siteData, updateData } = useSite();
   const photos = siteData.gallery || [];
+  const manualFeed = siteData.instagramFeed || [];
+  const { posts: igFeed } = useInstagramFeed(manualFeed, updateData);
   const [lightboxItem, setLightboxItem] = useState(null);
 
   // Click handler: if item has Instagram URL open that, else open lightbox
@@ -176,6 +179,46 @@ const GalleryPage = () => {
           <Instagram size={14} />@standardfaresaratoga
         </a>
       </div>
+
+      {/* Instagram Feed — 3 most recent posts, auto-refreshed every 12 hours */}
+      {igFeed.length > 0 && (
+        <div className="bg-cream pt-12 pb-4">
+          <div className="section-container">
+            <div className="flex flex-col items-center gap-1 mb-6">
+              <div className="flex items-center gap-2">
+                <Instagram size={16} className="text-flamingo" />
+                <p className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50">
+                  Latest from Instagram
+                </p>
+              </div>
+              <p className="font-body text-[11px] text-navy opacity-35">
+                Our 3 most recent posts &middot; updated automatically
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-3 md:gap-4">
+              {igFeed.map((post) => (
+                <a key={post.id} href={post.postUrl || siteData.links.instagram}
+                  target="_blank" rel="noopener noreferrer"
+                  className="group relative overflow-hidden rounded-lg aspect-square bg-navy-light">
+                  <img src={post.imageUrl} alt={post.caption || "Instagram post"}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy" />
+                  <div className="absolute inset-0 bg-navy bg-opacity-0 group-hover:bg-opacity-40
+                                  transition-all duration-300 flex items-center justify-center">
+                    <Instagram size={24} className="text-cream opacity-0 group-hover:opacity-90 transition-opacity" />
+                  </div>
+                  {post.caption && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3
+                                    opacity-0 group-hover:opacity-100 transition-opacity">
+                      <p className="font-body text-cream text-xs line-clamp-2">{post.caption}</p>
+                    </div>
+                  )}
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Grid */}
       <div className="section-padding bg-cream">

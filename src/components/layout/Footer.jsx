@@ -98,14 +98,14 @@ const Footer = () => {
                   Also from our team
                 </p>
                 <a
-                  href="https://www.bocagechampagnebar.com/"
+                  href="https://www.instagram.com/bocagechampagnebar/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 group w-fit"
                 >
                   <span className="text-lg">🥂</span>
                   <div>
-                    <p className="font-display text-cream text-sm group-hover:text-flamingo transition-colors">
+                    <p className="font-display text-cream text-sm group-hover:text-gold transition-colors">
                       Bocage Champagne Bar
                     </p>
                     <p className="font-body text-xs text-cream opacity-40">
@@ -125,8 +125,12 @@ const Footer = () => {
                   { label: "Menu",         path: "/menu" },
                   { label: "Events",       path: "/events" },
                   { label: "Gallery",      path: "/gallery" },
-                  { label: "Paintings",    path: "/prints" },
+                  ...(siteData.settings?.showPaintings !== false ? [{ label: "Paintings", path: "/prints" }] : []),
+                  { label: "Blog",         path: "/blog" },
                   { label: "Press",        path: "/press" },
+                  { label: "Press Kit",    path: "/press-kit" },
+                  { label: "Private Events", path: "/private-events" },
+                  { label: "FAQ",          path: "/faq" },
                   { label: "Contact",      path: "/contact" },
                 ].map(({ label, path }) => (
                   <li key={path}>
@@ -139,23 +143,35 @@ const Footer = () => {
               </ul>
             </div>
 
-            {/* CTAs */}
+            {/* Visit Us */}
             <div>
               <h4 className="font-mono text-xs tracking-editorial uppercase text-flamingo mb-5">Visit Us</h4>
-              <div className="flex flex-col gap-3">
-                <a href={siteData.links.reservations} target="_blank" rel="noopener noreferrer"
-                  className="btn-ghost text-center text-xs py-3 px-5 touch-manipulation">
-                  Reserve a Table
-                </a>
-                <a href={siteData.links.giftCards} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 font-body text-sm text-cream opacity-70 hover:opacity-100 hover:text-flamingo transition-all touch-manipulation">
-                  <ExternalLink size={13} />Gift Cards
-                </a>
-                <a href={siteData.links.doordash} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 font-body text-sm text-cream opacity-70 hover:opacity-100 hover:text-flamingo transition-all touch-manipulation">
-                  <ExternalLink size={13} />Order on DoorDash
-                </a>
-              </div>
+              <ul className="flex flex-col gap-3">
+                <li>
+                  <a href={siteData.links.reservations} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 font-body text-sm text-cream opacity-70 hover:opacity-100 hover:text-flamingo transition-all touch-manipulation">
+                    <ExternalLink size={13} />Reservations
+                  </a>
+                </li>
+                <li>
+                  <Link to="/gift-cards"
+                    className="flex items-center gap-2 font-body text-sm text-cream opacity-70 hover:opacity-100 hover:text-flamingo transition-all touch-manipulation">
+                    <ExternalLink size={13} />Gift Cards
+                  </Link>
+                </li>
+                <li>
+                  <a href={siteData.links.doordash} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 font-body text-sm text-cream opacity-70 hover:opacity-100 hover:text-flamingo transition-all touch-manipulation">
+                    <ExternalLink size={13} />Order on DoorDash
+                  </a>
+                </li>
+                <li>
+                  <a href={siteData.links.toastOnlineOrder} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 font-body text-sm text-cream opacity-70 hover:opacity-100 hover:text-flamingo transition-all touch-manipulation">
+                    <ExternalLink size={13} />Order Pickup
+                  </a>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
@@ -201,7 +217,7 @@ const Footer = () => {
                   href="https://www.linkedin.com/in/colelevy/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-flamingo opacity-80 hover:opacity-100 underline underline-offset-2 transition-opacity"
+                  className="text-cream opacity-100 hover:opacity-100 hover:text-flamingo transition-all"
                 >
                   Cole Levy
                 </a>

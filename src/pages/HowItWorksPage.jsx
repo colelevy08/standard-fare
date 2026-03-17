@@ -182,7 +182,7 @@ const HowItWorksPage = () => {
             "Ticket Fallback URL — where the Get Tickets button sends people until Toast is connected",
             "Toast Product ID — paste this from your Toast dashboard after creating the event there",
             "See README-TOAST.md in your project folder for the full Toast setup walkthrough",
-            "Past events automatically move to a \"Past Events\" section",
+            "Past events are automatically detected by date and displayed in a \"Past Events\" gallery — no manual toggle needed",
           ]}
           tip="Until you paste a Toast Product ID, the Get Tickets button still works — it just goes to your general Toast online ordering page."
         />
@@ -190,20 +190,96 @@ const HowItWorksPage = () => {
         <Section
           number="8"
           title="Paintings (Gallery Shop)"
-          description="Daniel Fairley's artwork available for purchase directly on the site. Sales connect to Toast just like events."
+          description="Daniel Fairley's artwork is automatically imported from his Big Cartel shop once per day. Pricing, availability, and photos sync automatically. A separate section below the paintings showcases his other products too."
           bullets={[
-            "Add prints with title, artist, medium, price, photo, and description",
+            "Paintings sync automatically from Daniel's Big Cartel shop every 24 hours",
+            "Hit \"Sync Now\" in admin to pull the latest paintings immediately",
+            "Manually add or edit prints with title, artist, medium, price, and description",
             "Toggle the Available checkbox to mark pieces as sold out",
-            "Toast Product ID — connect each print to its Toast product for seamless checkout",
-            "Sold out pieces still appear in the shop with a \"Sold Out\" badge",
+            "Toast Product ID — connect each print to its Toast product for checkout",
+            "Daniel Fairley's artist bio is shown above the paintings",
+            "The paintings section can be hidden/shown with a separate password toggle",
           ]}
-          tip="Artwork sold on the website shows up in your Toast dashboard right next to your burger and salmon sales. Your accountant will love it."
+          tip="Artwork sold on the website shows up in your Toast dashboard right next to your burger and salmon sales. Daniel's new pieces auto-import — you don't have to lift a finger."
         />
 
         <Section
           number="9"
+          title="Merchandise"
+          description="Your branded merchandise store. Sell tees, hats, pins, totes — anything with the Standard Fare name on it."
+          bullets={[
+            "Add items with name, category, price, variants (sizes/colors), description, and photo",
+            "Draft/Publish toggle — items in draft are only visible to you in admin, not to guests",
+            "Available checkbox — mark items as sold out (they still show with a badge)",
+            "Toast Product ID — connect each item to Toast for checkout",
+            "Drag and drop to reorder items on the page",
+          ]}
+          tip="New items are created as drafts by default. Fill in all the details, upload a photo, then toggle 'Published' when you're ready to sell."
+        />
+
+        <Section
+          number="10"
+          title="Instagram Feed (Automatic)"
+          description="The 3 most recent posts from @standardfaresaratoga are automatically pulled and displayed at the top of your Gallery page. No manual work needed."
+          bullets={[
+            "Posts are scraped from your public Instagram profile every 12 hours automatically",
+            "Images, captions, and post links are all pulled and displayed",
+            "Each post links directly to Instagram when clicked by visitors",
+            "Results are saved to Supabase so they persist across all devices",
+            "If the auto-pull ever fails, manual fallback entries are used instead",
+            "Hit \"Refresh Now\" in admin to pull the latest posts immediately",
+          ]}
+          tip="Just keep posting great content on Instagram — your website handles the rest. The feed updates itself twice a day."
+        />
+
+        <Section
+          number="11"
+          title="Google Reviews (Automatic)"
+          description="Real 5-star Google reviews are pulled from your Google Business listing and shown on the homepage. No API key or paid service required."
+          bullets={[
+            "Reviews are scraped from Google every 12 hours via a free web scrape (Wanderlog)",
+            "Only 5-star reviews are shown — keeping your website looking its best",
+            "Reviews mentioning staff or 'Cole' are prioritized without making it obvious",
+            "Each review links to the original Google review when clicked",
+            "Hit \"Pull from Google\" in admin to refresh immediately",
+            "If scraping is unavailable, the site falls back to manually entered testimonials",
+          ]}
+          tip="Every great review on Google automatically becomes social proof on your website. Encourage happy guests to leave Google reviews — it feeds both your search ranking and your homepage."
+        />
+
+        <Section
+          number="12"
+          title="Shopping Cart & Checkout"
+          description="Guests can add bottles, paintings, merchandise, and event tickets to a single cart and check out in one transaction. The order is sent to Toast POS for fulfillment."
+          bullets={[
+            "Cart icon in the navbar shows item count — opens a slide-out drawer",
+            "Supports four item types: bottles, paintings, merch, and event tickets",
+            "Quantity controls and variant selection (sizes, colors) built in",
+            "Cart persists across pages — guests can browse and come back",
+            "Checkout collects name, email, phone, and order notes",
+            "Orders submit to /api/toast-order — appears in your Toast dashboard",
+            "Until Toast credentials are configured, a \"Call to Order\" fallback is shown",
+          ]}
+          tip="When Toast is connected, a guest can buy a $85 bottle of wine, a $2,000 painting, and two event tickets — all in one checkout, all in one Toast report."
+        />
+
+        <Section
+          number="13"
+          title="Paintings Toggle"
+          description="The paintings/art section can be hidden or shown with a separate password — independent from the admin password. This lets you control visibility without affecting the rest of the site."
+          bullets={[
+            "Toggle ON = Paintings link appears in the navbar, footer, and homepage",
+            "Toggle OFF = Paintings link is hidden everywhere; the /prints page shows an unavailable message",
+            "Requires the paintings password (separate from admin password) to change",
+            "Useful for seasonal shows, gallery rotations, or when Daniel's inventory changes",
+          ]}
+          tip="The paintings toggle is great for controlling visibility around gallery events — hide the section, prep the new collection, then flip it back on when you're ready to showcase."
+        />
+
+        <Section
+          number="14"
           title="Press"
-          description="Your media coverage. Add new articles as they come in — this section is your bragging wall."
+          description="Your media coverage. Add new articles as they come in — this section is your bragging wall. Drag and drop to reorder."
           bullets={[
             "Outlet name, article headline, and URL for each piece of coverage",
             "Publication logo — upload or paste the outlet's logo image URL",
@@ -214,7 +290,7 @@ const HowItWorksPage = () => {
         />
 
         <Section
-          number="10"
+          number="15"
           title="External Links"
           description="All the third-party service URLs in one place. Update these when services change their links."
           bullets={[
@@ -229,7 +305,7 @@ const HowItWorksPage = () => {
         />
 
         <Section
-          number="11"
+          number="16"
           title="Contact Emails"
           description="The email addresses shown on the Contact page. Add as many as you need."
           bullets={[
@@ -242,7 +318,7 @@ const HowItWorksPage = () => {
         />
 
         <Section
-          number="12"
+          number="17"
           title="Site Settings — Passwords & Gate"
           description="The password-protected preview mode that's currently keeping the site private while you review it. You can also change both passwords here without touching any code."
           bullets={[
@@ -290,10 +366,14 @@ const HowItWorksPage = () => {
           </p>
         </div>
 
-        {/* Back button */}
-        <div className="text-center pt-4">
+        {/* Navigation */}
+        <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center">
+          <Link to="/admin/value"
+            className="btn-primary inline-flex items-center justify-center gap-2">
+            How It Brings Value
+          </Link>
           <Link to="/admin"
-            className="btn-primary inline-flex items-center gap-2">
+            className="inline-flex items-center justify-center gap-2 font-body text-sm text-navy border border-navy border-opacity-20 rounded-lg px-6 py-3 hover:border-flamingo hover:text-flamingo transition-all">
             <ArrowLeft size={16} /> Back to Admin Panel
           </Link>
         </div>

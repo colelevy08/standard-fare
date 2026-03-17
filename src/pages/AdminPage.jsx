@@ -21,10 +21,41 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Plus, Trash2, Save, ChevronDown, ChevronUp } from "lucide-react";
+import { LogOut, Plus, Trash2, Save, ChevronDown, ChevronUp, Undo2, GripVertical, RefreshCw, Eye, Copy } from "lucide-react";
 import { useSite } from "../context/AdminContext";
 import PageLayout from "../components/layout/PageLayout";
-import ImageUploader from "../components/ui/ImageUploader"; // Drag-drop + base64 image uploader
+import ImageUploader from "../components/ui/ImageUploader";
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import useInstagramFeed from "../hooks/useInstagramFeed";
+import PRESS_OUTLETS from "../data/pressOutlets";
+import usePressRefresh from "../hooks/usePressRefresh";
+import { DEFAULT_EVENT_PHOTOS } from "../data/eventPhotos";
+
+// ── Sortable wrapper for drag-and-drop reorder ──────────────────────────
+const SortableItem = ({ id, children }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: "relative",
+    zIndex: isDragging ? 50 : "auto",
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div className="flex items-start gap-1">
+        <button {...attributes} {...listeners}
+          className="mt-3 p-1 cursor-grab active:cursor-grabbing text-navy opacity-20 hover:opacity-50 touch-manipulation flex-shrink-0"
+          title="Drag to reorder">
+          <GripVertical size={16} />
+        </button>
+        <div className="flex-1 min-w-0">{children}</div>
+      </div>
+    </div>
+  );
+};
 
 // ── Small utility components ───────────────────────────────────────────────
 
@@ -103,6 +134,9 @@ const Field = ({ label, value, onChange, type = "text", multiline = false, place
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onPaste={(e) => {
+          setTimeout(() => onChange(e.target.value), 0);
+        }}
         rows={4}
         className="form-input text-base resize-y"
         placeholder={placeholder}
@@ -113,7 +147,6 @@ const Field = ({ label, value, onChange, type = "text", multiline = false, place
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onPaste={(e) => {
-          // Allow paste to complete, then fire onChange with the pasted value
           setTimeout(() => onChange(e.target.value), 0);
         }}
         className="form-input text-base"
@@ -127,7 +160,11 @@ const Field = ({ label, value, onChange, type = "text", multiline = false, place
 // ADMIN PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 const AdminPage = () => {
-  const { siteData, updateData, isAdmin, logout, dbReady, dbLoading, dbError, retrySupabase } = useSite();
+  const { siteData, updateData, isAdmin, logout, dbReady, dbLoading, dbError, retrySupabase, canUndo, undo, draftMode, setDraftMode, hasDraft, publishDraft, discardDraft } = useSite();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
   const navigate = useNavigate();
 
   // Redirect non-admin users back to home (protects the route)
@@ -200,7 +237,7 @@ const AdminPage = () => {
                 // Mirror to links so External Links stays in sync
                 updateData("links", { ...siteData.links, bocage: v });
               }}
-              placeholder="https://www.bocagechampagnebar.com/"
+              placeholder="https://www.instagram.com/bocagechampagnebar/"
             />
             <Field
               label="Sub-label (shown under the button name)"
@@ -279,6 +316,7 @@ const AdminPage = () => {
   // ───────────────────────────────────────────────────────────────────────────
   const HoursEditor = () => {
     const [hours, setHours] = useState([...siteData.hours]);
+    const [override, setOverride] = useState({ ...( siteData.hoursOverride || { enabled: false, message: "", dates: "" }) });
 
     // Update a single day's open or close value
     const setHour = (i, field, value) => {
@@ -287,14 +325,50 @@ const AdminPage = () => {
     };
 
     const save = () => updateData("hours", hours);
+    const saveOverride = () => updateData("hoursOverride", override);
 
     return (
       <div>
+        {/* Hours Override Controls */}
+        <div className="mb-6 p-4 border border-flamingo border-opacity-30 rounded-lg bg-cream bg-opacity-50">
+          <label className="flex items-center gap-2 cursor-pointer mb-3">
+            <input
+              type="checkbox"
+              checked={override.enabled}
+              onChange={(e) => setOverride({ ...override, enabled: e.target.checked })}
+              className="accent-flamingo w-4 h-4"
+            />
+            <span className="font-display text-navy text-sm font-bold">Enable Hours Override / Holiday Notice</span>
+          </label>
+          {override.enabled && (
+            <div className="space-y-3 ml-6">
+              <div>
+                <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-40 block mb-1">Override Message</label>
+                <input type="text" value={override.message}
+                  onChange={(e) => setOverride({ ...override, message: e.target.value })}
+                  placeholder='e.g. "Closed for Private Event" or "Holiday Hours: Open 11AM–6PM"'
+                  className="form-input text-base py-2 w-full" />
+              </div>
+              <div>
+                <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-40 block mb-1">Dates</label>
+                <input type="text" value={override.dates}
+                  onChange={(e) => setOverride({ ...override, dates: e.target.value })}
+                  placeholder='e.g. "March 25" or "Dec 24-25"'
+                  className="form-input text-base py-2 w-full" />
+              </div>
+              <p className="font-body text-xs text-navy opacity-50 italic">
+                Preview: "{override.message || "Schedule Change"}" {override.dates && `— ${override.dates}`}
+              </p>
+            </div>
+          )}
+          <button onClick={saveOverride} className="btn-primary flex items-center gap-2 mt-3"><Save size={14} />Save Override</button>
+        </div>
+
         {hours.map((h, i) => (
           <CollapsibleItem
             key={h.day}
             label={h.day}
-            sublabel={h.open === "Closed" || !h.open ? "Closed" : `${h.open} – ${h.close}`}
+            sublabel={h.open === "Closed" || h.open === "Gone Fishing" || !h.open ? h.open || "Closed" : `${h.open} – ${h.close}`}
             defaultOpen={false}
           >
             <div className="grid grid-cols-2 gap-3">
@@ -335,13 +409,19 @@ const AdminPage = () => {
     return (
       <div>
         {Object.entries(loc).map(([key, val]) => (
-          <Field
+          <CollapsibleItem
             key={key}
             label={labels[key] || key.replace(/([A-Z])/g, " $1")}
-            value={val}
-            onChange={(v) => setLoc({ ...loc, [key]: v })}
-            multiline={key === "mapEmbedUrl"}
-          />
+            sublabel={val ? String(val).substring(0, 60) : "Not set"}
+            defaultOpen={false}
+          >
+            <Field
+              label={labels[key] || key.replace(/([A-Z])/g, " $1")}
+              value={val}
+              onChange={(v) => setLoc({ ...loc, [key]: v })}
+              multiline={key === "mapEmbedUrl"}
+            />
+          </CollapsibleItem>
         ))}
         <button onClick={save} className="btn-primary flex items-center gap-2 mt-2"><Save size={14} />Save Location</button>
       </div>
@@ -583,6 +663,15 @@ const AdminPage = () => {
     const remove = (i) => setPhotos(photos.filter((_, idx) => idx !== i));
     const save   = () => updateData("gallery", photos);
 
+    const handleDragEnd = (event) => {
+      const { active, over } = event;
+      if (active.id !== over?.id) {
+        const oldIdx = photos.findIndex((p) => p.id === active.id);
+        const newIdx = photos.findIndex((p) => p.id === over.id);
+        setPhotos(arrayMove(photos, oldIdx, newIdx));
+      }
+    };
+
     return (
       <div>
         <div className="bg-navy rounded-lg p-5 mb-6">
@@ -607,9 +696,11 @@ const AdminPage = () => {
           </p>
         </div>
 
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={photos.map((p) => p.id)} strategy={verticalListSortingStrategy}>
         {photos.map((photo, i) => (
+          <SortableItem key={photo.id} id={photo.id}>
           <CollapsibleItem
-            key={photo.id}
             label={photo.alt || photo.caption || `Gallery Item ${i + 1}`}
             sublabel={photo.url ? `✓ ${photo.mediaType || "image"}${photo.instagramUrl ? " · Instagram linked" : ""}` : "No media yet"}
             defaultOpen={!photo.url}
@@ -679,7 +770,10 @@ const AdminPage = () => {
               />
             </div>
           </CollapsibleItem>
+          </SortableItem>
         ))}
+        </SortableContext>
+        </DndContext>
 
         <div className="flex gap-4 flex-wrap mt-2">
           <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark">
@@ -705,23 +799,52 @@ const AdminPage = () => {
 
     const add = () => setEvents([...events, {
       id: Date.now(), title: "", date: "", time: "", description: "",
-      price: 0, capacity: null, imageUrl: "", toastProductId: null, ticketUrl: ""
+      price: 0, capacity: null, venue: "standard-fare", imageUrl: "", toastProductId: null, ticketUrl: ""
     }]);
 
     const remove = (i) => setEvents(events.filter((_, idx) => idx !== i));
 
     const save = () => updateData("events", events);
 
+    const handleDragEnd = (event) => {
+      const { active, over } = event;
+      if (active.id !== over?.id) {
+        const oldIdx = events.findIndex((e) => e.id === active.id);
+        const newIdx = events.findIndex((e) => e.id === over.id);
+        setEvents(arrayMove(events, oldIdx, newIdx));
+      }
+    };
+
     return (
       <div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={events.map((e) => e.id)} strategy={verticalListSortingStrategy}>
         {events.map((ev, i) => (
-          <div key={ev.id} className="border border-navy border-opacity-10 rounded p-6 mb-6">
-            <div className="flex justify-between items-start mb-4">
-              <h4 className="font-display text-navy text-base">{ev.title || "New Event"}</h4>
-              <button onClick={() => remove(i)} className="text-flamingo-dark hover:text-flamingo"><Trash2 size={16} /></button>
-            </div>
+          <SortableItem key={ev.id} id={ev.id}>
+          <CollapsibleItem
+            label={ev.title || "New Event"}
+            sublabel={(() => {
+              const isPast = ev.date && new Date(ev.date + "T23:59:59") < new Date();
+              const parts = [];
+              if (isPast) parts.push("⏱ PAST");
+              if (ev.venue === "bocage") parts.push("🥂 Bocage");
+              if (ev.date) parts.push(ev.date);
+              if (ev.price) parts.push(`$${ev.price}`);
+              return parts.join(" · ") || "No date set";
+            })()}
+            defaultOpen={!ev.title}
+            onRemove={() => remove(i)}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Title" value={ev.title} onChange={(v) => update(i, "title", v)} />
+              <div className="mb-4">
+                <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-1">Venue</label>
+                <select value={ev.venue || "standard-fare"} onChange={(e) => update(i, "venue", e.target.value)}
+                  className="form-input text-base">
+                  <option value="standard-fare">Standard Fare</option>
+                  <option value="bocage">Bocage Champagne Bar</option>
+                </select>
+              </div>
               <Field label="Date (YYYY-MM-DD)" value={ev.date} onChange={(v) => update(i, "date", v)} placeholder="2026-04-12" />
               <Field label="Time" value={ev.time} onChange={(v) => update(i, "time", v)} placeholder="6:30 PM – 9:00 PM" />
               <Field label="Price ($)" value={String(ev.price)} onChange={(v) => update(i, "price", Number(v))} type="number" />
@@ -730,15 +853,17 @@ const AdminPage = () => {
               <Field label="Toast Product ID (see README-TOAST.md)" value={ev.toastProductId || ""} onChange={(v) => update(i, "toastProductId", v || null)} placeholder="TOAST-PROD-ID" />
             </div>
             <Field label="Description" value={ev.description} onChange={(v) => update(i, "description", v)} multiline />
-            {/* Image uploader for event photo — replaces URL text field */}
             <ImageUploader
               label="Event Photo"
               value={ev.imageUrl}
               onChange={(v) => update(i, "imageUrl", v)}
               height="h-40"
             />
-          </div>
+          </CollapsibleItem>
+          </SortableItem>
         ))}
+        </SortableContext>
+        </DndContext>
         <div className="flex gap-4 flex-wrap">
           <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark"><Plus size={14} />Add Event</button>
           <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Events</button>
@@ -752,6 +877,8 @@ const AdminPage = () => {
   // ───────────────────────────────────────────────────────────────────────────
   const PrintsEditor = () => {
     const [prints, setPrints] = useState(JSON.parse(JSON.stringify(siteData.prints)));
+    const [syncing, setSyncing] = useState(false);
+    const [syncMsg, setSyncMsg] = useState(null);
 
     const update = (i, field, value) => {
       setPrints(prints.map((p, idx) => idx === i ? { ...p, [field]: value } : p));
@@ -766,14 +893,102 @@ const AdminPage = () => {
 
     const save = () => updateData("prints", prints);
 
+    // Sync from poemdexter.com (Big Cartel)
+    const syncFromBigCartel = async () => {
+      setSyncing(true);
+      setSyncMsg(null);
+      try {
+        const apiUrl = process.env.NODE_ENV === "production"
+          ? `/api/bigcartel-products?bust=${Date.now()}`
+          : `https://poemdexter.bigcartel.com/products.json`;
+        const res = await fetch(apiUrl);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const rawProducts = data.products || data;
+        if (!Array.isArray(rawProducts) || rawProducts.length === 0) throw new Error("No products returned");
+
+        // Merge: update existing prints by title match, add new ones
+        const existingByTitle = {};
+        prints.forEach((p) => { existingByTitle[p.title.toLowerCase()] = p; });
+
+        const merged = [];
+        const seen = new Set();
+        rawProducts.forEach((bp) => {
+          const title = bp.name || bp.title;
+          const key = title.toLowerCase();
+          seen.add(key);
+          const existing = existingByTitle[key];
+          if (existing) {
+            // Update availability and price from Big Cartel, keep local overrides
+            merged.push({
+              ...existing,
+              available: (bp.status === "active"),
+              price: bp.default_price || bp.price || existing.price,
+              imageUrl: existing.imageUrl || bp.images?.[0]?.url || bp.imageUrl || "",
+              bigCartelUrl: bp.url?.startsWith("http") ? bp.url : `https://poemdexter.bigcartel.com${bp.url || `/product/${bp.permalink}`}`,
+            });
+          } else {
+            // New product from Big Cartel
+            const cats = (bp.categories || []).map((c) => typeof c === "string" ? c : c.name);
+            merged.push({
+              id: bp.id || Date.now() + Math.random(),
+              title,
+              artist: "Daniel Fairley",
+              medium: cats.join(", ") || "Mixed Media",
+              price: bp.default_price || bp.price || 0,
+              imageUrl: bp.images?.[0]?.url || bp.imageUrl || "",
+              available: bp.status === "active",
+              description: (bp.description || "").replace(/<[^>]+>/g, "").trim(),
+              toastProductId: null,
+              bigCartelUrl: bp.url?.startsWith("http") ? bp.url : `https://poemdexter.bigcartel.com${bp.url || `/product/${bp.permalink}`}`,
+            });
+          }
+        });
+        // Keep any local-only prints that weren't on Big Cartel
+        prints.forEach((p) => {
+          if (!seen.has(p.title.toLowerCase())) merged.push(p);
+        });
+
+        setPrints(merged);
+        setSyncMsg(`Synced ${rawProducts.length} products from poemdexter.com`);
+      } catch (e) {
+        setSyncMsg(`Sync failed: ${e.message}`);
+      } finally {
+        setSyncing(false);
+      }
+    };
+
     return (
       <div>
-        {prints.map((p, i) => (
-          <div key={p.id} className="border border-navy border-opacity-10 rounded p-6 mb-6">
-            <div className="flex justify-between items-start mb-4">
-              <h4 className="font-display text-navy text-base">{p.title || "New Print"}</h4>
-              <button onClick={() => remove(i)} className="text-flamingo-dark hover:text-flamingo"><Trash2 size={16} /></button>
+        {/* Sync banner */}
+        <div className="mb-4 bg-cream-warm border border-navy border-opacity-10 rounded-lg p-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <p className="font-body text-sm text-navy font-bold">Auto-Import from poemdexter.com</p>
+              <p className="font-body text-xs text-navy opacity-50">
+                Paintings sync automatically once per day. Use the button to refresh now.
+              </p>
             </div>
+            <button onClick={syncFromBigCartel} disabled={syncing}
+              className="btn-ghost py-2 px-4 text-xs flex items-center gap-2 disabled:opacity-40">
+              {syncing ? "Syncing..." : "Sync Now"}
+            </button>
+          </div>
+          {syncMsg && (
+            <p className={`font-mono text-xs mt-2 ${syncMsg.includes("failed") ? "text-red-500" : "text-green-600"}`}>
+              {syncMsg}
+            </p>
+          )}
+        </div>
+
+        {prints.map((p, i) => (
+          <CollapsibleItem
+            key={p.id}
+            label={p.title || "New Print"}
+            sublabel={`${p.artist || "No artist"}${p.price ? ` · $${p.price}` : ""}${p.available ? "" : " · SOLD OUT"}`}
+            defaultOpen={!p.title}
+            onRemove={() => remove(i)}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Title" value={p.title} onChange={(v) => update(i, "title", v)} />
               <Field label="Artist" value={p.artist} onChange={(v) => update(i, "artist", v)} />
@@ -788,14 +1003,13 @@ const AdminPage = () => {
               </div>
             </div>
             <Field label="Description" value={p.description} onChange={(v) => update(i, "description", v)} multiline />
-            {/* Image uploader for print photo */}
             <ImageUploader
               label="Print Photo"
               value={p.imageUrl}
               onChange={(v) => update(i, "imageUrl", v)}
               height="h-48"
             />
-          </div>
+          </CollapsibleItem>
         ))}
         <div className="flex gap-4 flex-wrap">
           <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark"><Plus size={14} />Add Print</button>
@@ -808,11 +1022,91 @@ const AdminPage = () => {
   // ───────────────────────────────────────────────────────────────────────────
   // PRESS EDITOR
   // ───────────────────────────────────────────────────────────────────────────
+  // Searchable outlet dropdown — type to filter known publications, select to
+  // auto-fill outlet name + logo. Still allows custom entries.
+  const OutletSelector = ({ value, logo, onChange }) => {
+    const [query, setQuery] = useState("");
+    const [open, setOpen] = useState(false);
+
+    const filtered = query.trim()
+      ? PRESS_OUTLETS.filter((o) => o.name.toLowerCase().includes(query.toLowerCase()))
+      : PRESS_OUTLETS;
+
+    // Group by category
+    const grouped = {};
+    filtered.forEach((o) => {
+      if (!grouped[o.category]) grouped[o.category] = [];
+      grouped[o.category].push(o);
+    });
+    const categoryOrder = ["Local", "Regional", "National", "Platform"];
+
+    const select = (outlet) => {
+      onChange(outlet.name, outlet.logo);
+      setQuery("");
+      setOpen(false);
+    };
+
+    return (
+      <div className="relative">
+        <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-1">Publication</label>
+        <div className="flex items-center gap-2">
+          {logo && (
+            <img src={logo} alt="" className="w-6 h-6 object-contain rounded flex-shrink-0" />
+          )}
+          <input
+            value={open ? query : value}
+            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setTimeout(() => setOpen(false), 200)}
+            className="form-input text-base py-2 flex-1"
+            placeholder="Search or type outlet name..."
+          />
+        </div>
+        {open && filtered.length > 0 && (
+          <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-navy border-opacity-15 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+            {categoryOrder.map((cat) => {
+              if (!grouped[cat]) return null;
+              return (
+                <div key={cat}>
+                  <div className="px-3 py-1.5 bg-cream-warm font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40 sticky top-0">
+                    {cat}
+                  </div>
+                  {grouped[cat].map((o) => (
+                    <button key={o.name} type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => select(o)}
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-cream-warm transition-colors text-left">
+                      <img src={o.logo} alt="" className="w-5 h-5 object-contain rounded flex-shrink-0"
+                        onError={(e) => { e.target.style.display = "none"; }} />
+                      <span className="font-body text-sm text-navy">{o.name}</span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const PressEditor = () => {
     const [press, setPress] = useState(JSON.parse(JSON.stringify(siteData.press)));
 
+    const handleNewArticles = (newArticles) => {
+      setPress((prev) => [...prev, ...newArticles]);
+    };
+
+    const { loading: refreshing, lastUpdated, newCount, forceRefresh } = usePressRefresh(
+      press, handleNewArticles
+    );
+
     const update = (i, field, value) => {
       setPress(press.map((p, idx) => idx === i ? { ...p, [field]: value } : p));
+    };
+
+    const selectOutlet = (i, name, logo) => {
+      setPress(press.map((p, idx) => idx === i ? { ...p, outlet: name, logo } : p));
     };
 
     const add = () => setPress([...press, { id: Date.now(), outlet: "", headline: "", url: "", logo: "" }]);
@@ -822,34 +1116,57 @@ const AdminPage = () => {
     return (
       <div>
         {press.map((p, i) => (
-          <div key={p.id} className="border border-navy border-opacity-10 rounded-lg p-5 mb-5">
-            <div className="flex justify-between items-center mb-3">
-              <span className="font-mono text-flamingo text-xs tracking-editorial uppercase">{p.outlet || "New Article"}</span>
-              <button onClick={() => remove(i)} className="text-flamingo-dark hover:text-flamingo flex items-center gap-1 font-body text-xs">
-                <Trash2 size={14} /> Remove
-              </button>
-            </div>
+          <CollapsibleItem
+            key={p.id}
+            label={p.outlet || "New Article"}
+            sublabel={p.headline || "No headline"}
+            defaultOpen={!p.outlet}
+            onRemove={() => remove(i)}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              <input value={p.outlet} onChange={(e) => update(i, "outlet", e.target.value)}
-                className="form-input text-base py-2" placeholder="Outlet name (e.g. Times Union)" />
-              <input value={p.url} onChange={(e) => update(i, "url", e.target.value)}
-                className="form-input text-base py-2" placeholder="Article URL" />
-              <input value={p.headline} onChange={(e) => update(i, "headline", e.target.value)}
-                className="form-input text-sm py-2 md:col-span-2" placeholder="Article headline" />
+              <OutletSelector
+                value={p.outlet}
+                logo={p.logo}
+                onChange={(name, logo) => selectOutlet(i, name, logo)}
+              />
+              <Field label="Article URL" value={p.url} onChange={(v) => update(i, "url", v)} placeholder="https://..." />
+              <div className="md:col-span-2">
+                <Field label="Article Headline" value={p.headline} onChange={(v) => update(i, "headline", v)} placeholder="Article headline or pull quote" />
+              </div>
             </div>
-            {/* Logo uploader — upload the publication's logo or paste its URL */}
             <ImageUploader
-              label="Publication Logo (optional — upload or paste URL)"
+              label="Custom Logo (overrides preset — optional)"
               value={p.logo || ""}
               onChange={(v) => update(i, "logo", v)}
               height="h-16"
             />
-          </div>
+          </CollapsibleItem>
         ))}
-        <div className="flex gap-4 flex-wrap mt-2">
+        <div className="flex gap-4 flex-wrap mt-2 items-center">
           <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark"><Plus size={14} />Add Article</button>
           <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Press</button>
+          <button onClick={forceRefresh} disabled={refreshing}
+            className="flex items-center gap-2 font-body text-sm text-navy opacity-50 hover:opacity-100 hover:text-flamingo transition-all disabled:opacity-30">
+            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+            {refreshing ? "Scanning..." : "Scan for New Press"}
+          </button>
         </div>
+        {/* Refresh status */}
+        {(lastUpdated || newCount > 0) && (
+          <div className="mt-2 font-body text-xs text-navy opacity-40">
+            {newCount > 0 && (
+              <span className="text-flamingo font-bold opacity-100 mr-3">
+                {newCount} new article{newCount > 1 ? "s" : ""} found — hit Save to keep
+              </span>
+            )}
+            {lastUpdated && (
+              <span>Last scan: {new Date(lastUpdated).toLocaleString()}</span>
+            )}
+          </div>
+        )}
+        <p className="mt-1 font-body text-xs text-navy opacity-30">
+          Press is automatically scanned every 12 hours. Only positive reviews are shown.
+        </p>
       </div>
     );
   };
@@ -872,7 +1189,14 @@ const AdminPage = () => {
     return (
       <div>
         {Object.entries(links).map(([key, val]) => (
-          <Field key={key} label={labels[key] || key} value={val} onChange={(v) => setLinks({ ...links, [key]: v })} />
+          <CollapsibleItem
+            key={key}
+            label={labels[key] || key}
+            sublabel={val ? String(val).substring(0, 50) : "Not set"}
+            defaultOpen={false}
+          >
+            <Field label={labels[key] || key} value={val} onChange={(v) => setLinks({ ...links, [key]: v })} />
+          </CollapsibleItem>
         ))}
         <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Links</button>
       </div>
@@ -958,6 +1282,18 @@ const AdminPage = () => {
     const [previewMode, setPreviewMode] = useState(
       sd.settings?.previewMode !== false
     );
+    const [showOrderBtn, setShowOrderBtn] = useState(
+      sd.settings?.showOrderButton !== false
+    );
+    const [showBottleShop, setShowBottleShop] = useState(
+      sd.settings?.showBottleShop !== false
+    );
+    const [showPaintings, setShowPaintings] = useState(
+      sd.settings?.showPaintings !== false
+    );
+    const [paintingsPw, setPaintingsPw] = useState("");
+    const [paintingsMsg, setPaintingsMsg] = useState(null);
+    const PAINTINGS_PASSWORD = "iluvartbydan26";
 
     // Admin password change state
     const [newAdmin,        setNewAdmin]        = useState("");
@@ -974,6 +1310,27 @@ const AdminPage = () => {
     // Save preview mode toggle
     const savePreviewMode = async () => {
       await updateData("settings", { ...sd.settings, previewMode });
+    };
+
+    // Save order button toggle
+    const saveOrderBtn = async () => {
+      await updateData("settings", { ...sd.settings, showOrderButton: showOrderBtn });
+    };
+
+    // Save bottle shop toggle
+    const saveBottleShop = async () => {
+      await updateData("settings", { ...sd.settings, showBottleShop });
+    };
+
+    // Save paintings toggle (requires separate password)
+    const savePaintings = async () => {
+      if (paintingsPw !== PAINTINGS_PASSWORD) {
+        setPaintingsMsg({ ok: false, text: "Incorrect password." });
+        return;
+      }
+      await updateData("settings", { ...sd.settings, showPaintings });
+      setPaintingsMsg({ ok: true, text: showPaintings ? "Paintings section is now visible." : "Paintings section is now hidden." });
+      setPaintingsPw("");
     };
 
     // Change admin password
@@ -997,13 +1354,14 @@ const AdminPage = () => {
     };
 
     return (
-      <div className="space-y-8">
+      <div className="space-y-3">
 
         {/* ── Preview Gate Toggle ─────────────────────────────── */}
-        <div>
-          <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4">
-            Password Landing Page
-          </p>
+        <CollapsibleItem
+          label="Password Landing Page"
+          sublabel={previewMode ? "ON — gate is active" : "OFF — site is public"}
+          defaultOpen={true}
+        >
           <div className="flex items-start justify-between gap-6 p-5 bg-cream-warm rounded-xl border border-navy border-opacity-10">
             <div className="flex-1">
               <p className="font-body text-navy font-bold text-sm mb-1">Password Gate</p>
@@ -1027,10 +1385,120 @@ const AdminPage = () => {
           <button onClick={savePreviewMode} className="btn-primary flex items-center gap-2 mt-3">
             <Save size={14} />Save Gate Setting
           </button>
-        </div>
+        </CollapsibleItem>
+
+        {/* ── Order Button Toggle ───────────────────────────────── */}
+        <CollapsibleItem
+          label="Order Button"
+          sublabel={showOrderBtn ? "Visible to visitors" : "Hidden from visitors"}
+          defaultOpen={false}
+        >
+          <div className="flex items-start justify-between gap-6 p-5 bg-cream-warm rounded-xl border border-navy border-opacity-10">
+            <div className="flex-1">
+              <p className="font-body text-navy font-bold text-sm mb-1">Show Order Button</p>
+              <p className="font-body text-navy opacity-50 text-xs leading-relaxed">
+                Toggle the "Order" button in the navigation bar. Hide it when online ordering isn't available.
+              </p>
+              <p className={`font-mono text-xs tracking-editorial uppercase mt-2 ${showOrderBtn ? "text-flamingo" : "text-navy opacity-40"}`}>
+                {showOrderBtn ? "Visible" : "Hidden"}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowOrderBtn(v => !v)}
+              className={`relative flex-shrink-0 w-14 h-7 rounded-full transition-colors duration-300
+                ${showOrderBtn ? "bg-flamingo" : "bg-navy bg-opacity-20"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow
+                transition-transform duration-300 ${showOrderBtn ? "translate-x-7" : "translate-x-0"}`} />
+            </button>
+          </div>
+          <button onClick={saveOrderBtn} className="btn-primary flex items-center gap-2 mt-3">
+            <Save size={14} />Save
+          </button>
+        </CollapsibleItem>
+
+        {/* ── Bottle Shop Toggle ──────────────────────────────────── */}
+        <CollapsibleItem
+          label="Bottle Shop"
+          sublabel={showBottleShop ? "Visible to visitors" : "Hidden from visitors"}
+          defaultOpen={false}
+        >
+          <div className="flex items-start justify-between gap-6 p-5 bg-cream-warm rounded-xl border border-navy border-opacity-10">
+            <div className="flex-1">
+              <p className="font-body text-navy font-bold text-sm mb-1">Show Bottle Shop</p>
+              <p className="font-body text-navy opacity-50 text-xs leading-relaxed">
+                Toggle the Bottle Shop page, nav link, and homepage preview.
+                Hide it if wine/bottle sales aren't active yet.
+              </p>
+              <p className={`font-mono text-xs tracking-editorial uppercase mt-2 ${showBottleShop ? "text-flamingo" : "text-navy opacity-40"}`}>
+                {showBottleShop ? "Visible" : "Hidden"}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowBottleShop(v => !v)}
+              className={`relative flex-shrink-0 w-14 h-7 rounded-full transition-colors duration-300
+                ${showBottleShop ? "bg-flamingo" : "bg-navy bg-opacity-20"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow
+                transition-transform duration-300 ${showBottleShop ? "translate-x-7" : "translate-x-0"}`} />
+            </button>
+          </div>
+          <button onClick={saveBottleShop} className="btn-primary flex items-center gap-2 mt-3">
+            <Save size={14} />Save
+          </button>
+        </CollapsibleItem>
+
+        {/* ── Paintings Section Toggle ────────────────────────────── */}
+        <CollapsibleItem
+          label="Paintings Section"
+          sublabel={showPaintings ? "Visible to visitors" : "Hidden from visitors"}
+          defaultOpen={false}
+        >
+          <div className="flex items-start justify-between gap-6 p-5 bg-cream-warm rounded-xl border border-navy border-opacity-10">
+            <div className="flex-1">
+              <p className="font-body text-navy font-bold text-sm mb-1">Show Paintings</p>
+              <p className="font-body text-navy opacity-50 text-xs leading-relaxed">
+                Toggle Daniel Fairley's paintings section. Hides the Paintings page, nav link, and
+                homepage preview. Requires a separate password to change.
+              </p>
+              <p className={`font-mono text-xs tracking-editorial uppercase mt-2 ${showPaintings ? "text-flamingo" : "text-navy opacity-40"}`}>
+                {showPaintings ? "Visible" : "Hidden"}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowPaintings(v => !v)}
+              className={`relative flex-shrink-0 w-14 h-7 rounded-full transition-colors duration-300
+                ${showPaintings ? "bg-flamingo" : "bg-navy bg-opacity-20"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow
+                transition-transform duration-300 ${showPaintings ? "translate-x-7" : "translate-x-0"}`} />
+            </button>
+          </div>
+          <div className="mt-3 flex flex-col gap-2 max-w-sm">
+            <input
+              type="password"
+              value={paintingsPw}
+              onChange={(e) => { setPaintingsPw(e.target.value); setPaintingsMsg(null); }}
+              className="form-input text-base py-2"
+              placeholder="Enter paintings password to save"
+            />
+            {paintingsMsg && (
+              <p className={`font-body text-sm ${paintingsMsg.ok ? "text-green-700" : "text-flamingo-dark"}`}>
+                {paintingsMsg.text}
+              </p>
+            )}
+            <button onClick={savePaintings} className="btn-primary flex items-center gap-2 w-fit">
+              <Save size={14} />Save Paintings Setting
+            </button>
+          </div>
+        </CollapsibleItem>
 
         {/* ── Change Preview Password ─────────────────────────── */}
-        <div className="border-t border-navy border-opacity-10 pt-8">
+        <CollapsibleItem
+          label="Preview Password"
+          sublabel={`Current: ${previewPassword}`}
+          defaultOpen={false}
+        >
           <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-1">
             Preview Password
           </p>
@@ -1068,13 +1536,14 @@ const AdminPage = () => {
               <Save size={14} />Update Preview Password
             </button>
           </form>
-        </div>
+        </CollapsibleItem>
 
         {/* ── Change Admin Password ───────────────────────────── */}
-        <div className="border-t border-navy border-opacity-10 pt-8">
-          <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-1">
-            Admin Password
-          </p>
+        <CollapsibleItem
+          label="Admin Password"
+          sublabel={`Current: ${adminPassword}`}
+          defaultOpen={false}
+        >
           <p className="font-body text-navy opacity-50 text-xs mb-4">
             Current: <span className="font-bold text-navy opacity-70">{adminPassword}</span>
             {" "}— used to log into this admin panel.
@@ -1112,8 +1581,1108 @@ const AdminPage = () => {
           <p className="font-body text-xs text-navy opacity-30 mt-3">
             Write down your new password before saving — if you forget it you'll need to reset the site data.
           </p>
+        </CollapsibleItem>
+
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // MERCH EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const MerchEditor = () => {
+    const [items, setItems] = useState(JSON.parse(JSON.stringify(siteData.merch || [])));
+
+    const update = (i, field, value) =>
+      setItems(items.map((m, idx) => (idx === i ? { ...m, [field]: value } : m)));
+
+    const add = () => setItems([...items, {
+      id: Date.now(), name: "", category: "", description: "",
+      price: 0, imageUrl: "", variants: "", available: true, draft: true, toastProductId: null,
+    }]);
+
+    const remove = (i) => setItems(items.filter((_, idx) => idx !== i));
+    const save = () => updateData("merch", items);
+
+    const handleDragEnd = (event) => {
+      const { active, over } = event;
+      if (active.id !== over?.id) {
+        const oldIdx = items.findIndex((m) => m.id === active.id);
+        const newIdx = items.findIndex((m) => m.id === over.id);
+        setItems(arrayMove(items, oldIdx, newIdx));
+      }
+    };
+
+    return (
+      <div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={items.map((m) => m.id)} strategy={verticalListSortingStrategy}>
+        {items.map((item, i) => (
+          <SortableItem key={item.id} id={item.id}>
+          <CollapsibleItem
+            label={item.name || "New Item"}
+            sublabel={`${item.draft ? "DRAFT · " : ""}${item.category || "No category"}${item.price ? ` · $${item.price}` : ""}${item.available ? "" : " · SOLD OUT"}`}
+            defaultOpen={!item.name}
+            onRemove={() => remove(i)}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label="Item Name" value={item.name} onChange={(v) => update(i, "name", v)} placeholder="Logo Tee" />
+              <Field label="Category" value={item.category} onChange={(v) => update(i, "category", v)} placeholder="Apparel" />
+              <Field label="Price ($)" value={String(item.price)} onChange={(v) => update(i, "price", Number(v))} type="number" />
+              <Field label="Variants (sizes, colors)" value={item.variants} onChange={(v) => update(i, "variants", v)} placeholder="S / M / L / XL" />
+              <Field label="Toast Product ID" value={item.toastProductId || ""} onChange={(v) => update(i, "toastProductId", v || null)} placeholder="TOAST-PROD-ID" />
+              <div className="flex items-center gap-3 mt-6">
+                <input type="checkbox" id={`merch-draft-${i}`} checked={!item.draft}
+                  onChange={(e) => update(i, "draft", !e.target.checked)}
+                  className="accent-flamingo w-4 h-4" />
+                <label htmlFor={`merch-draft-${i}`} className="font-body text-sm text-navy">Published (visible to guests)</label>
+              </div>
+              <div className="flex items-center gap-3 mt-6">
+                <input type="checkbox" id={`merch-avail-${i}`} checked={item.available}
+                  onChange={(e) => update(i, "available", e.target.checked)}
+                  className="accent-flamingo w-4 h-4" />
+                <label htmlFor={`merch-avail-${i}`} className="font-body text-sm text-navy">Available for purchase</label>
+              </div>
+            </div>
+            <Field label="Description" value={item.description} onChange={(v) => update(i, "description", v)} multiline />
+            <ImageUploader label="Product Photo" value={item.imageUrl} onChange={(v) => update(i, "imageUrl", v)} height="h-48" />
+          </CollapsibleItem>
+          </SortableItem>
+        ))}
+        </SortableContext>
+        </DndContext>
+        <div className="flex gap-4 flex-wrap">
+          <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark"><Plus size={14} />Add Item</button>
+          <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Merchandise</button>
+        </div>
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // BOTTLES EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const BottlesEditor = () => {
+    const [items, setItems] = useState(JSON.parse(JSON.stringify(siteData.bottles || [])));
+
+    const update = (i, field, value) =>
+      setItems(items.map((b, idx) => (idx === i ? { ...b, [field]: value } : b)));
+
+    const add = () => setItems([...items, {
+      id: Date.now(), name: "", category: "wine", varietal: "", region: "",
+      description: "", price: 0, imageUrl: "", available: true, draft: true, toastProductId: null,
+    }]);
+
+    const remove = (i) => setItems(items.filter((_, idx) => idx !== i));
+    const save = () => updateData("bottles", items);
+
+    const handleDragEnd = (event) => {
+      const { active, over } = event;
+      if (active.id !== over?.id) {
+        const oldIdx = items.findIndex((b) => b.id === active.id);
+        const newIdx = items.findIndex((b) => b.id === over.id);
+        setItems(arrayMove(items, oldIdx, newIdx));
+      }
+    };
+
+    return (
+      <div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={items.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+        {items.map((bottle, i) => (
+          <SortableItem key={bottle.id} id={bottle.id}>
+          <CollapsibleItem
+            label={bottle.name || "New Bottle"}
+            sublabel={`${bottle.draft ? "DRAFT · " : ""}${bottle.category === "wine" ? "Wine" : "Beer"} · ${bottle.varietal || "No varietal"}${bottle.price ? ` · $${bottle.price}` : ""}${bottle.available ? "" : " · SOLD OUT"}`}
+            defaultOpen={!bottle.name}
+            onRemove={() => remove(i)}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label="Bottle Name" value={bottle.name} onChange={(v) => update(i, "name", v)} placeholder="Château Margaux 2018" />
+              <div>
+                <label className="block font-body text-navy text-sm font-bold mb-1">Category</label>
+                <select value={bottle.category} onChange={(e) => update(i, "category", e.target.value)}
+                  className="w-full p-3 rounded border border-navy border-opacity-20 font-body text-sm text-navy bg-white">
+                  <option value="wine">Wine</option>
+                  <option value="beer">Beer</option>
+                </select>
+              </div>
+              <Field label="Varietal / Style" value={bottle.varietal} onChange={(v) => update(i, "varietal", v)} placeholder="Cabernet Sauvignon" />
+              <Field label="Region / Brewery" value={bottle.region} onChange={(v) => update(i, "region", v)} placeholder="Bordeaux, France" />
+              <Field label="Price ($)" value={String(bottle.price)} onChange={(v) => update(i, "price", Number(v))} type="number" />
+              <Field label="Toast Product ID" value={bottle.toastProductId || ""} onChange={(v) => update(i, "toastProductId", v || null)} placeholder="TOAST-PROD-ID" />
+              <div className="flex items-center gap-3 mt-6">
+                <input type="checkbox" id={`btl-draft-${i}`} checked={!bottle.draft}
+                  onChange={(e) => update(i, "draft", !e.target.checked)}
+                  className="accent-flamingo w-4 h-4" />
+                <label htmlFor={`btl-draft-${i}`} className="font-body text-sm text-navy">Published (visible to guests)</label>
+              </div>
+              <div className="flex items-center gap-3 mt-6">
+                <input type="checkbox" id={`btl-avail-${i}`} checked={bottle.available}
+                  onChange={(e) => update(i, "available", e.target.checked)}
+                  className="accent-flamingo w-4 h-4" />
+                <label htmlFor={`btl-avail-${i}`} className="font-body text-sm text-navy">Available for purchase</label>
+              </div>
+            </div>
+            <Field label="Description" value={bottle.description} onChange={(v) => update(i, "description", v)} multiline />
+            <ImageUploader label="Bottle Photo" value={bottle.imageUrl} onChange={(v) => update(i, "imageUrl", v)} height="h-48" />
+          </CollapsibleItem>
+          </SortableItem>
+        ))}
+        </SortableContext>
+        </DndContext>
+        <div className="flex gap-4 flex-wrap">
+          <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark"><Plus size={14} />Add Bottle</button>
+          <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Bottles</button>
+        </div>
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // SPECIALS EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const SpecialsEditor = () => {
+    const [items, setItems] = useState(JSON.parse(JSON.stringify(siteData.specials || [])));
+    const update = (i, field, value) => setItems(items.map((s, idx) => (idx === i ? { ...s, [field]: value } : s)));
+    const toggleDay = (i, day) => {
+      const days = items[i].days.includes(day) ? items[i].days.filter((d) => d !== day) : [...items[i].days, day];
+      update(i, "days", days);
+    };
+    const add = () => setItems([...items, { id: Date.now(), title: "", description: "", days: [], startTime: "16:00", endTime: "18:00", active: true }]);
+    const remove = (i) => setItems(items.filter((_, idx) => idx !== i));
+    const save = () => updateData("specials", items);
+    const allDays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
+    return (
+      <div>
+        {items.map((s, i) => (
+          <CollapsibleItem key={s.id} label={s.title || "New Special"} sublabel={s.active ? "Active" : "Inactive"} defaultOpen={!s.title} onRemove={() => remove(i)}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label="Title" value={s.title} onChange={(v) => update(i, "title", v)} placeholder="Happy Hour" />
+              <Field label="Description" value={s.description} onChange={(v) => update(i, "description", v)} placeholder="$8 cocktails, $5 drafts" />
+              <Field label="Start Time" value={s.startTime} onChange={(v) => update(i, "startTime", v)} type="time" />
+              <Field label="End Time" value={s.endTime} onChange={(v) => update(i, "endTime", v)} type="time" />
+            </div>
+            <div className="mt-3">
+              <label className="block font-body text-navy text-sm font-bold mb-2">Active Days</label>
+              <div className="flex flex-wrap gap-2">
+                {allDays.map((day) => (
+                  <button key={day} onClick={() => toggleDay(i, day)} type="button"
+                    className={`px-3 py-1 rounded-full text-xs font-mono uppercase ${s.days.includes(day) ? "bg-flamingo text-white" : "bg-navy bg-opacity-10 text-navy opacity-50"}`}>
+                    {day.slice(0, 3)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-3 mt-3">
+              <input type="checkbox" checked={s.active} onChange={(e) => update(i, "active", e.target.checked)} className="accent-flamingo w-4 h-4" />
+              <span className="font-body text-sm text-navy">Active</span>
+            </div>
+          </CollapsibleItem>
+        ))}
+        <div className="flex gap-4 flex-wrap">
+          <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo"><Plus size={14} />Add Special</button>
+          <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Specials</button>
+        </div>
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // TESTIMONIALS EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const TestimonialsEditor = () => {
+    const [items, setItems] = useState(JSON.parse(JSON.stringify(siteData.testimonials || [])));
+    const [syncing, setSyncing] = useState(false);
+    const [syncMsg, setSyncMsg] = useState(null);
+    const update = (i, field, value) => setItems(items.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+    const add = () => setItems([...items, { id: Date.now(), name: "", source: "Google", rating: 5, text: "", reviewUrl: "" }]);
+    const remove = (i) => setItems(items.filter((_, idx) => idx !== i));
+    const save = () => updateData("testimonials", items);
+
+    // Pull reviews from Google Places API
+    const syncGoogle = async () => {
+      setSyncing(true);
+      setSyncMsg(null);
+      try {
+        const res = await fetch(`/api/google-reviews?bust=${Date.now()}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        if (!data.reviews?.length) throw new Error("No reviews returned");
+
+        // Convert Google reviews to our format
+        const googleReviews = data.reviews.map((r) => ({
+          id: r.id || `google-${r.time || Date.now()}`,
+          name: r.name,
+          source: "Google",
+          rating: r.rating,
+          text: r.text,
+          reviewUrl: r.reviewUrl || r.profileUrl || "",
+          relativeTime: r.relativeTime || "",
+        }));
+
+        // Merge: keep existing manual reviews, add/update Google ones
+        const existingManual = items.filter((r) => r.source !== "Google" || !r.id?.toString().startsWith("google-"));
+        const merged = [...googleReviews, ...existingManual];
+        setItems(merged);
+        setSyncMsg(`Pulled ${googleReviews.length} reviews from Google (${data.rating?.toFixed(1)} stars, ${data.totalReviews} total). Click Save to keep.`);
+      } catch (e) {
+        setSyncMsg(`Sync failed: ${e.message}`);
+      } finally {
+        setSyncing(false);
+      }
+    };
+
+    return (
+      <div>
+        {/* Google sync banner */}
+        <div className="mb-4 bg-cream-warm border border-navy border-opacity-10 rounded-lg p-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <p className="font-body text-sm text-navy font-bold">Auto-Import Google Reviews</p>
+              <p className="font-body text-xs text-navy opacity-50">
+                Reviews are pulled from Google automatically once per day. No API key needed.
+              </p>
+            </div>
+            <button onClick={syncGoogle} disabled={syncing}
+              className="btn-ghost py-2 px-4 text-xs flex items-center gap-2 disabled:opacity-40">
+              {syncing ? "Syncing..." : "Pull from Google"}
+            </button>
+          </div>
+          {syncMsg && (
+            <p className={`font-mono text-xs mt-2 ${syncMsg.includes("failed") ? "text-red-500" : "text-green-600"}`}>
+              {syncMsg}
+            </p>
+          )}
         </div>
 
+        {items.map((r, i) => (
+          <CollapsibleItem key={r.id} label={r.name || "New Review"} sublabel={`${r.source} · ${"★".repeat(r.rating)}`} defaultOpen={!r.name} onRemove={() => remove(i)}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Field label="Reviewer Name" value={r.name} onChange={(v) => update(i, "name", v)} placeholder="Jane D." />
+              <div>
+                <label className="block font-body text-navy text-sm font-bold mb-1">Source</label>
+                <select value={r.source} onChange={(e) => update(i, "source", e.target.value)}
+                  className="w-full p-3 rounded border border-navy border-opacity-20 font-body text-sm text-navy bg-white">
+                  <option value="Google">Google</option>
+                  <option value="Yelp">Yelp</option>
+                  <option value="TripAdvisor">TripAdvisor</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-body text-navy text-sm font-bold mb-1">Rating</label>
+                <select value={r.rating} onChange={(e) => update(i, "rating", Number(e.target.value))}
+                  className="w-full p-3 rounded border border-navy border-opacity-20 font-body text-sm text-navy bg-white">
+                  {[5,4,3,2,1].map((n) => <option key={n} value={n}>{n} Stars</option>)}
+                </select>
+              </div>
+            </div>
+            <Field label="Review Text" value={r.text} onChange={(v) => update(i, "text", v)} multiline />
+            <Field label="Review URL" value={r.reviewUrl || ""} onChange={(v) => update(i, "reviewUrl", v)} placeholder="https://g.co/kgs/... or https://www.yelp.com/..." />
+          </CollapsibleItem>
+        ))}
+        <div className="flex gap-4 flex-wrap">
+          <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo"><Plus size={14} />Add Review</button>
+          <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Reviews</button>
+        </div>
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // NEWSLETTER EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const NewsletterEditor = () => {
+    const [subject, setSubject] = useState("");
+    const [body, setBody] = useState("");
+    const [preview, setPreview] = useState(false);
+    const [drafts, setDrafts] = useState(siteData.newsletter?.drafts || []);
+
+    const saveDraft = () => {
+      if (!subject.trim()) return;
+      const draft = { id: Date.now(), subject, body, savedAt: new Date().toISOString() };
+      const updated = [...drafts, draft];
+      setDrafts(updated);
+      updateData("newsletter", { ...siteData.newsletter, drafts: updated });
+      setSubject(""); setBody("");
+    };
+
+    const removeDraft = (id) => {
+      const updated = drafts.filter((d) => d.id !== id);
+      setDrafts(updated);
+      updateData("newsletter", { ...siteData.newsletter, drafts: updated });
+    };
+
+    const loadDraft = (draft) => {
+      setSubject(draft.subject);
+      setBody(draft.body);
+    };
+
+    return (
+      <div className="space-y-4">
+        <CollapsibleItem label="Compose Newsletter" sublabel="Create and preview email blasts" defaultOpen={true}>
+          <Field label="Subject Line" value={subject} onChange={setSubject} placeholder="This Week at Standard Fare" />
+          <Field label="Email Body" value={body} onChange={setBody} multiline />
+          <div className="flex gap-3 mt-3">
+            <button onClick={() => setPreview(!preview)} className="btn-ghost flex items-center gap-2 text-sm">
+              {preview ? "Hide Preview" : "Preview"}
+            </button>
+            <button onClick={saveDraft} className="btn-primary flex items-center gap-2"><Save size={14} />Save Draft</button>
+          </div>
+          {preview && (
+            <div className="mt-4 border border-navy border-opacity-10 rounded-xl p-6 bg-white">
+              <p className="font-body text-navy font-bold text-lg mb-1">{subject || "(No subject)"}</p>
+              <hr className="my-3 border-navy border-opacity-10" />
+              <div className="font-body text-navy text-sm opacity-70 whitespace-pre-wrap">{body || "(No content)"}</div>
+              <hr className="my-3 border-navy border-opacity-10" />
+              <p className="font-mono text-xs text-navy opacity-30">Standard Fare · 21 Phila St · Saratoga Springs, NY</p>
+            </div>
+          )}
+        </CollapsibleItem>
+
+        {drafts.length > 0 && (
+          <CollapsibleItem label="Saved Drafts" sublabel={`${drafts.length} draft${drafts.length !== 1 ? "s" : ""}`} defaultOpen={false}>
+            {drafts.map((d) => (
+              <div key={d.id} className="flex items-center justify-between p-3 bg-cream-warm rounded mb-2">
+                <div>
+                  <p className="font-body text-navy text-sm font-bold">{d.subject}</p>
+                  <p className="font-mono text-xs text-navy opacity-40">{new Date(d.savedAt).toLocaleDateString()}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => loadDraft(d)} className="text-flamingo text-xs font-body hover:underline">Load</button>
+                  <button onClick={() => removeDraft(d.id)} className="text-navy opacity-30 hover:opacity-60 text-xs font-body">Delete</button>
+                </div>
+              </div>
+            ))}
+          </CollapsibleItem>
+        )}
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // SMS CLUB EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const SmsClubEditor = () => {
+    const [club, setClub] = useState({ ...siteData.smsClub });
+    const update = (field, value) => setClub({ ...club, [field]: value });
+    const save = () => updateData("smsClub", club);
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 mb-2">
+          <input type="checkbox" checked={club.enabled || false} onChange={(e) => update("enabled", e.target.checked)} className="accent-flamingo w-4 h-4" />
+          <span className="font-body text-sm text-navy font-bold">Enable SMS Text Club</span>
+        </div>
+        <Field label="Headline" value={club.headline || ""} onChange={(v) => update("headline", v)} placeholder="Join the Text Club" />
+        <Field label="Subtext" value={club.subtext || ""} onChange={(v) => update("subtext", v)} placeholder="Get exclusive deals delivered to your phone." />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="Keyword" value={club.keyword || ""} onChange={(v) => update("keyword", v)} placeholder="FARE" />
+          <Field label="Shortcode" value={club.shortcode || ""} onChange={(v) => update("shortcode", v)} placeholder="12345" />
+        </div>
+        <Field label="Webhook URL (optional)" value={club.webhookUrl || ""} onChange={(v) => update("webhookUrl", v)} placeholder="https://hooks.zapier.com/..." />
+        <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save SMS Club</button>
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // POPULAR NOW EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const PopularNowEditor = () => {
+    const [popular, setPopular] = useState({ ...siteData.popularNow });
+    const items = popular.manualItems || [];
+    const updateItem = (i, field, value) => {
+      const updated = items.map((p, idx) => (idx === i ? { ...p, [field]: value } : p));
+      setPopular({ ...popular, manualItems: updated });
+    };
+    const add = () => {
+      const updated = [...items, { name: "", category: "menu" }];
+      setPopular({ ...popular, manualItems: updated });
+    };
+    const remove = (i) => {
+      const updated = items.filter((_, idx) => idx !== i);
+      setPopular({ ...popular, manualItems: updated });
+    };
+    const save = () => updateData("popularNow", popular);
+
+    return (
+      <div>
+        <p className="font-body text-sm text-navy opacity-60 mb-4 leading-relaxed">
+          Mark items as "Popular Now" — they'll get a badge on the menu and bottle shop pages.
+        </p>
+        {items.map((item, i) => (
+          <div key={i} className="flex items-center gap-3 mb-3 bg-cream-warm rounded-lg p-3">
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input value={item.name} onChange={(e) => updateItem(i, "name", e.target.value)}
+                placeholder="Item name (must match exactly)"
+                className="p-2 rounded border border-navy border-opacity-20 font-body text-sm text-navy bg-white" />
+              <select value={item.category} onChange={(e) => updateItem(i, "category", e.target.value)}
+                className="p-2 rounded border border-navy border-opacity-20 font-body text-sm text-navy bg-white">
+                <option value="menu">Menu Item</option>
+                <option value="bottles">Bottle</option>
+              </select>
+            </div>
+            <button onClick={() => remove(i)} className="text-navy opacity-30 hover:opacity-60"><Trash2 size={14} /></button>
+          </div>
+        ))}
+        <div className="flex gap-4 flex-wrap">
+          <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo"><Plus size={14} />Add Item</button>
+          <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Popular Items</button>
+        </div>
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // INSTAGRAM FEED EDITOR — curate 3 posts for the gallery page header
+  // ───────────────────────────────────────────────────────────────────────────
+  const InstagramFeedEditor = () => {
+    const manualFeed = siteData.instagramFeed || [];
+    const { posts: livePosts, loading: igLoading, lastFetched: igLastFetched, forceRefresh: igForceRefresh, error: igError } = useInstagramFeed(manualFeed, updateData);
+    const [igSyncMsg, setIgSyncMsg] = useState(null);
+
+    const [feed, setFeed] = useState(
+      manualFeed.length >= 3
+        ? [...manualFeed]
+        : [
+            { id: "ig1", imageUrl: "", postUrl: "", caption: "" },
+            { id: "ig2", imageUrl: "", postUrl: "", caption: "" },
+            { id: "ig3", imageUrl: "", postUrl: "", caption: "" },
+          ]
+    );
+
+    const update = (i, field, value) =>
+      setFeed(feed.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
+
+    const save = () => updateData("instagramFeed", feed);
+
+    const handleForceRefresh = async () => {
+      setIgSyncMsg(null);
+      try {
+        await igForceRefresh();
+        setIgSyncMsg({ ok: true, text: "Instagram feed refreshed from latest posts." });
+      } catch {
+        setIgSyncMsg({ ok: false, text: "Failed to refresh. Posts will use manual entries as fallback." });
+      }
+    };
+
+    return (
+      <div>
+        <p className="font-body text-sm text-navy opacity-60 mb-4 leading-relaxed">
+          The 3 most recent Instagram posts are automatically pulled and shown at the top of
+          the Gallery page. They refresh every 12 hours. Use the button below to refresh now,
+          or manually set posts as a fallback.
+        </p>
+
+        {/* Auto-pull status & force refresh */}
+        <div className="bg-cream-warm rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="font-body text-sm text-navy font-semibold">Auto-Pull from Instagram</p>
+            <button onClick={handleForceRefresh} disabled={igLoading}
+              className="btn-ghost flex items-center gap-2 py-1.5 px-3 text-xs disabled:opacity-50"
+              title="Refresh now — pulls the 3 most recent posts from @standardfaresaratoga">
+              <RefreshCw size={13} className={igLoading ? "animate-spin" : ""} />
+              {igLoading ? "Refreshing…" : "Refresh Now"}
+            </button>
+          </div>
+          {igLastFetched && (
+            <p className="font-mono text-[11px] text-navy opacity-40">
+              Last refreshed: {new Date(igLastFetched).toLocaleString()}
+            </p>
+          )}
+          {livePosts.length > 0 && (
+            <div className="flex gap-2 mt-3">
+              {livePosts.slice(0, 3).map((p) => (
+                <a key={p.id} href={p.postUrl} target="_blank" rel="noopener noreferrer"
+                  className="block w-16 h-16 rounded overflow-hidden bg-navy-light flex-shrink-0">
+                  {p.imageUrl && <img src={p.imageUrl} alt="" className="w-full h-full object-cover" />}
+                </a>
+              ))}
+            </div>
+          )}
+          {igSyncMsg && (
+            <p className={`font-body text-xs mt-2 ${igSyncMsg.ok ? "text-green-700" : "text-flamingo-dark"}`}>
+              {igSyncMsg.text}
+            </p>
+          )}
+          {igError && !igSyncMsg && (
+            <p className="font-body text-xs text-flamingo-dark mt-2">
+              Auto-pull unavailable: {igError}. Manual entries below will be used.
+            </p>
+          )}
+        </div>
+
+        {/* Manual fallback entries */}
+        <p className="font-body text-xs text-navy opacity-40 mb-3 uppercase tracking-wider">
+          Manual Fallback (used if auto-pull is unavailable)
+        </p>
+        {feed.map((post, i) => (
+          <CollapsibleItem
+            key={post.id}
+            label={`Post ${i + 1}`}
+            sublabel={post.caption || (post.imageUrl ? "Image set" : "Empty")}
+            defaultOpen={!post.imageUrl}
+          >
+            <ImageUploader
+              label="Post Image"
+              value={post.imageUrl}
+              onChange={(v) => update(i, "imageUrl", v)}
+              height="h-32"
+            />
+            <Field label="Instagram Post URL" value={post.postUrl} onChange={(v) => update(i, "postUrl", v)} placeholder="https://www.instagram.com/p/..." />
+            <Field label="Caption (optional)" value={post.caption} onChange={(v) => update(i, "caption", v)} placeholder="Short caption..." />
+          </CollapsibleItem>
+        ))}
+        <button onClick={save} className="btn-primary flex items-center gap-2">
+          <Save size={14} />Save Manual Feed
+        </button>
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // BLOG EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const BlogEditor = () => {
+    const [posts, setPosts] = useState([...(siteData.blog || [])]);
+    const [previewIdx, setPreviewIdx] = useState(null);
+    const updatePost = (i, field, value) => setPosts(posts.map((p, idx) => idx === i ? { ...p, [field]: value } : p));
+    const autoSlug = (title) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const add = () => setPosts([...posts, {
+      id: Date.now(), title: "", slug: "", date: new Date().toISOString().split("T")[0],
+      author: "", authorRole: "", excerpt: "", body: "", imageUrl: "", tags: [], published: true,
+    }]);
+    const duplicate = (i) => {
+      const src = posts[i];
+      setPosts([...posts, { ...src, id: Date.now(), title: src.title + " (copy)", slug: autoSlug(src.title + " copy") }]);
+    };
+    const remove = (i) => { setPosts(posts.filter((_, idx) => idx !== i)); setPreviewIdx(null); };
+    const move = (i, dir) => {
+      const next = i + dir;
+      if (next < 0 || next >= posts.length) return;
+      const arr = [...posts];
+      [arr[i], arr[next]] = [arr[next], arr[i]];
+      setPosts(arr);
+    };
+    const save = () => updateData("blog", posts);
+
+    const wordCount = (text) => (text || "").trim().split(/\s+/).filter(Boolean).length;
+    const readTime = (text) => { const w = wordCount(text); return w < 200 ? "< 1 min read" : `${Math.ceil(w / 200)} min read`; };
+
+    const formatPreviewDate = (d) => {
+      try { return new Date(d + "T12:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }); }
+      catch { return d; }
+    };
+
+    const postCounts = { total: posts.length, published: posts.filter(p => p.published !== false).length, draft: posts.filter(p => p.published === false).length };
+
+    return (
+      <div>
+        <p className="font-body text-sm text-navy opacity-60 mb-4 leading-relaxed">
+          Write blog posts that appear on the "From the Kitchen" page. Great for SEO and building a community connection.
+        </p>
+
+        {/* Post stats */}
+        {posts.length > 0 && (
+          <div className="flex gap-4 mb-5 flex-wrap">
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40">
+              {postCounts.total} post{postCounts.total !== 1 ? "s" : ""}
+            </span>
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-green-700 opacity-60">
+              {postCounts.published} published
+            </span>
+            {postCounts.draft > 0 && (
+              <span className="font-mono text-[10px] tracking-editorial uppercase text-amber-600 opacity-60">
+                {postCounts.draft} draft{postCounts.draft !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+        )}
+
+        {posts.map((post, i) => (
+          <CollapsibleItem key={post.id}
+            label={<span className="flex items-center gap-2">
+              {post.title || "Untitled Post"}
+              {post.published === false && <span className="font-mono text-[9px] tracking-editorial uppercase bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Draft</span>}
+            </span>}
+            sublabel={`${post.date}${post.body ? ` · ${readTime(post.body)}` : ""}`}
+            onRemove={() => remove(i)} defaultOpen={!post.title}>
+
+            {/* Published toggle */}
+            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-navy border-opacity-10">
+              <input type="checkbox" checked={post.published !== false}
+                onChange={(e) => updatePost(i, "published", e.target.checked)}
+                className="accent-flamingo w-4 h-4" />
+              <span className="font-body text-sm text-navy">
+                {post.published !== false ? <span className="text-green-700 font-bold">Published</span> : <span className="text-amber-600 font-bold">Draft</span>}
+                <span className="opacity-40"> — {post.published !== false ? "visible on blog" : "hidden from visitors"}</span>
+              </span>
+            </div>
+
+            {/* Title + auto-slug */}
+            <Field label="Title" value={post.title} onChange={(v) => { updatePost(i, "title", v); if (!post.slug || post.slug === autoSlug(post.title)) updatePost(i, "slug", autoSlug(v)); }} placeholder="Give your post a compelling title" />
+
+            {/* Slug (editable) */}
+            <div className="mb-4">
+              <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-1">URL Slug</label>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs text-navy opacity-30">/blog/</span>
+                <input type="text" value={post.slug}
+                  onChange={(e) => updatePost(i, "slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-|-$/g, ""))}
+                  className="flex-1 p-2 rounded-lg border border-navy border-opacity-20 font-mono text-sm text-navy" placeholder="auto-generated-from-title" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="mb-4">
+                <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-1">Date</label>
+                <input type="date" value={post.date}
+                  onChange={(e) => updatePost(i, "date", e.target.value)}
+                  className="w-full p-2 rounded-lg border border-navy border-opacity-20 font-body text-sm text-navy" />
+              </div>
+              <Field label="Author" value={post.author} onChange={(v) => updatePost(i, "author", v)} placeholder="Chef Joe Michaud" />
+            </div>
+            <Field label="Author Role (shown under photo)" value={post.authorRole || ""} onChange={(v) => updatePost(i, "authorRole", v)} placeholder="Executive Chef" />
+
+            <ImageUploader label="Cover Image" value={post.imageUrl} onChange={(v) => updatePost(i, "imageUrl", v)} height="h-32" />
+
+            <Field label="Excerpt (shown on blog list)" value={post.excerpt} onChange={(v) => updatePost(i, "excerpt", v)} multiline placeholder="A brief 1-2 sentence summary that appears on the blog listing page..." />
+
+            {/* Body editor with formatting help and word count */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50">Full Post Body</label>
+                <span className="font-mono text-[10px] text-navy opacity-30">
+                  {wordCount(post.body)} words · {readTime(post.body)}
+                </span>
+              </div>
+              <textarea value={post.body} onChange={(e) => updatePost(i, "body", e.target.value)} rows={14}
+                className="w-full p-4 rounded-lg border border-navy border-opacity-20 font-body text-sm text-navy leading-relaxed resize-y"
+                placeholder="Write the full blog post here.&#10;&#10;Use blank lines between paragraphs to create spacing.&#10;&#10;Each paragraph will be displayed as a separate block on the blog." />
+              <p className="font-body text-[11px] text-navy opacity-30 mt-1">
+                Separate paragraphs with blank lines. Each line break creates a new paragraph on the blog.
+              </p>
+            </div>
+
+            {/* Tags */}
+            <div className="mb-4">
+              <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-2">Tags</label>
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {(post.tags || []).map((tag) => (
+                  <span key={tag} className="inline-flex items-center gap-1 font-mono text-[11px] tracking-editorial uppercase bg-flamingo bg-opacity-10 text-flamingo px-3 py-1 rounded-full">
+                    {tag}
+                    <button type="button" onClick={() => updatePost(i, "tags", post.tags.filter(t => t !== tag))}
+                      className="hover:text-red-500 transition-colors ml-0.5">&times;</button>
+                  </span>
+                ))}
+                {(!post.tags || post.tags.length === 0) && (
+                  <span className="font-body text-xs text-navy opacity-30 italic">No tags yet — click suggestions below or type your own</span>
+                )}
+              </div>
+              <div className="mb-2">
+                <p className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-30 mb-1.5">Suggested Tags (click to add)</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["kitchen", "technique", "seasonal", "sourcing", "local", "community", "behind-the-scenes", "recipe",
+                    "wine", "cocktails", "steak", "brunch", "dinner", "dessert", "chef", "farm-to-table",
+                    "events", "holiday", "new-menu", "staff-picks", "sustainability", "tradition", "saratoga",
+                    "interview", "announcement", "specials", "pairing", "comfort-food", "ingredients", "story"
+                  ].filter(t => !(post.tags || []).includes(t)).map((tag) => (
+                    <button key={tag} type="button"
+                      onClick={() => updatePost(i, "tags", [...(post.tags || []), tag])}
+                      className="font-mono text-[10px] tracking-editorial uppercase bg-navy bg-opacity-5 text-navy opacity-40
+                                 hover:bg-flamingo hover:bg-opacity-10 hover:text-flamingo hover:opacity-100
+                                 px-2.5 py-1 rounded-full transition-all">
+                      + {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <input type="text" placeholder="Type a custom tag and press Enter"
+                className="w-full p-2 rounded-lg border border-navy border-opacity-20 font-mono text-xs text-navy"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const val = e.target.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/^-|-$/g, "");
+                    if (val && !(post.tags || []).includes(val)) {
+                      updatePost(i, "tags", [...(post.tags || []), val]);
+                      e.target.value = "";
+                    }
+                  }
+                }} />
+            </div>
+
+            {/* Post actions */}
+            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-navy border-opacity-10 flex-wrap">
+              <button onClick={() => setPreviewIdx(previewIdx === i ? null : i)}
+                className="flex items-center gap-1.5 font-mono text-xs tracking-editorial uppercase text-navy opacity-50 hover:opacity-100 hover:text-flamingo transition-all">
+                <Eye size={13} />{previewIdx === i ? "Close Preview" : "Preview"}
+              </button>
+              <button onClick={() => duplicate(i)}
+                className="flex items-center gap-1.5 font-mono text-xs tracking-editorial uppercase text-navy opacity-50 hover:opacity-100 hover:text-flamingo transition-all">
+                <Copy size={13} />Duplicate
+              </button>
+              {i > 0 && (
+                <button onClick={() => move(i, -1)}
+                  className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 hover:opacity-100 hover:text-flamingo transition-all">
+                  Move Up
+                </button>
+              )}
+              {i < posts.length - 1 && (
+                <button onClick={() => move(i, 1)}
+                  className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 hover:opacity-100 hover:text-flamingo transition-all">
+                  Move Down
+                </button>
+              )}
+            </div>
+
+            {/* Inline preview */}
+            {previewIdx === i && (
+              <div className="mt-4 border border-navy border-opacity-10 rounded-xl overflow-hidden">
+                <div className="bg-navy p-6 text-center">
+                  <p className="font-mono text-flamingo text-[10px] tracking-editorial uppercase mb-2">Preview — From the Kitchen</p>
+                  <h3 className="font-display text-cream text-xl">{post.title || "Untitled"}</h3>
+                  <div className="flex items-center justify-center gap-4 mt-3">
+                    {post.author && <span className="font-body text-cream text-xs opacity-50">{post.author}</span>}
+                    <span className="font-body text-cream text-xs opacity-50">{formatPreviewDate(post.date)}</span>
+                  </div>
+                </div>
+                <div className="bg-cream p-6">
+                  {post.imageUrl && (
+                    <img src={post.imageUrl} alt="" className="w-full h-40 object-cover rounded-lg mb-4" />
+                  )}
+                  <div className="font-body text-navy text-sm leading-relaxed space-y-3 max-h-64 overflow-y-auto">
+                    {(post.body || post.excerpt || "No content yet.").split("\n").filter(Boolean).map((p, pi) => (
+                      <p key={pi} className="opacity-80">{p}</p>
+                    ))}
+                  </div>
+                  {post.tags?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-4 pt-3 border-t border-navy border-opacity-10">
+                      {post.tags.map(t => (
+                        <span key={t} className="font-mono text-[10px] tracking-editorial uppercase bg-navy bg-opacity-5 text-navy opacity-50 px-2 py-0.5 rounded-full">{t}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+          </CollapsibleItem>
+        ))}
+        <div className="flex gap-4 flex-wrap">
+          <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo"><Plus size={14} />Add Post</button>
+          <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Blog</button>
+        </div>
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // WEEKLY FEATURES EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const TAG_OPTIONS = ["New", "Fan Favorite", "Seasonal", "Chef's Pick", "Limited"];
+
+  const WeeklyFeaturesEditor = () => {
+    const [config, setConfig] = useState({ ...(siteData.weeklyFeatures || { enabled: true, headline: "", subtitle: "", items: [] }) });
+    const [items, setItems] = useState((config.items || []).map(it => ({ ...it })));
+
+    const update = (field, value) => setConfig({ ...config, [field]: value });
+    const updateItem = (i, field, value) => setItems(items.map((it, idx) => idx === i ? { ...it, [field]: value } : it));
+    const addItem = () => setItems([...items, { id: Date.now(), name: "", description: "", price: 0, tag: "New" }]);
+    const removeItem = (i) => setItems(items.filter((_, idx) => idx !== i));
+    const save = () => updateData("weeklyFeatures", { ...config, items });
+
+    return (
+      <div className="space-y-4">
+        <p className="font-body text-sm text-navy opacity-60 leading-relaxed">
+          Highlight featured dishes on the homepage. Shows after Our Story, before Events.
+        </p>
+        <div className="flex items-center gap-3 mb-2">
+          <input type="checkbox" checked={config.enabled || false} onChange={(e) => update("enabled", e.target.checked)} className="accent-flamingo w-4 h-4" />
+          <span className="font-body text-sm text-navy font-bold">Enable Weekly Features</span>
+        </div>
+        <Field label="Headline" value={config.headline || ""} onChange={(v) => update("headline", v)} placeholder="This Week's Features" />
+        <Field label="Subtitle" value={config.subtitle || ""} onChange={(v) => update("subtitle", v)} placeholder="Chef's selections for the week" />
+
+        {items.map((item, i) => (
+          <CollapsibleItem key={item.id} label={item.name || "Untitled Dish"} sublabel={item.tag || ""} onRemove={() => removeItem(i)} defaultOpen={!item.name}>
+            <Field label="Dish Name" value={item.name} onChange={(v) => updateItem(i, "name", v)} placeholder="Pan-Seared Halibut" />
+            <Field label="Description" value={item.description} onChange={(v) => updateItem(i, "description", v)} placeholder="Spring peas, lemon beurre blanc, crispy capers" />
+            <Field label="Price" value={item.price} onChange={(v) => updateItem(i, "price", Number(v))} type="number" placeholder="38" />
+            <div className="mb-4">
+              <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-1">Tag</label>
+              <select value={item.tag || "New"} onChange={(e) => updateItem(i, "tag", e.target.value)}
+                className="form-input text-base">
+                {TAG_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </CollapsibleItem>
+        ))}
+
+        <div className="flex gap-4 flex-wrap">
+          <button onClick={addItem} className="flex items-center gap-2 font-body text-sm text-flamingo"><Plus size={14} />Add Dish</button>
+          <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Weekly Features</button>
+        </div>
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // SEASONAL COUNTDOWN EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const SeasonalCountdownEditor = () => {
+    const [config, setConfig] = useState({ ...siteData.seasonalCountdown });
+    const update = (field, value) => setConfig({ ...config, [field]: value });
+    const save = () => updateData("seasonalCountdown", config);
+
+    return (
+      <div className="space-y-4">
+        <p className="font-body text-sm text-navy opacity-60 leading-relaxed">
+          Show a countdown banner on the homepage for an upcoming seasonal menu launch.
+        </p>
+        <div className="flex items-center gap-3 mb-2">
+          <input type="checkbox" checked={config.enabled || false} onChange={(e) => update("enabled", e.target.checked)} className="accent-flamingo w-4 h-4" />
+          <span className="font-body text-sm text-navy font-bold">Enable Countdown</span>
+        </div>
+        <Field label="Menu Name" value={config.title || ""} onChange={(v) => update("title", v)} placeholder="Spring Menu" />
+        <Field label="Launch Date" value={config.launchDate || ""} onChange={(v) => update("launchDate", v)} placeholder="2026-04-15" />
+        <Field label="Teaser Text" value={config.teaser || ""} onChange={(v) => update("teaser", v)} placeholder="New seasonal dishes dropping soon..." />
+        <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Countdown</button>
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // EMAIL MARKETING EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const EmailMarketingEditor = () => {
+    const [config, setConfig] = useState({ ...siteData.emailMarketing });
+    const update = (field, value) => setConfig({ ...config, [field]: value });
+    const save = () => updateData("emailMarketing", config);
+
+    // Show stored signups count
+    let storedSignups = 0;
+    try { storedSignups = JSON.parse(localStorage.getItem("sf_email_signups") || "[]").length; } catch {}
+
+    return (
+      <div className="space-y-4">
+        <p className="font-body text-sm text-navy opacity-60 leading-relaxed">
+          Email signup form appears on the homepage. Connects to Mailchimp or Klaviyo when configured.
+          Until then, signups are stored in the browser.
+        </p>
+        <div className="flex items-center gap-3 mb-2">
+          <input type="checkbox" checked={config.enabled || false} onChange={(e) => update("enabled", e.target.checked)} className="accent-flamingo w-4 h-4" />
+          <span className="font-body text-sm text-navy font-bold">Enable Email Signup</span>
+        </div>
+        <Field label="Headline" value={config.headline || ""} onChange={(v) => update("headline", v)} placeholder="Stay in the Loop" />
+        <Field label="Subtext" value={config.subtext || ""} onChange={(v) => update("subtext", v)} placeholder="New menus, events, and exclusive offers." />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-2">Provider</label>
+            <select value={config.provider || ""} onChange={(e) => update("provider", e.target.value)}
+              className="w-full p-3 rounded-lg border border-navy border-opacity-20 font-body text-sm text-navy">
+              <option value="">None (store locally)</option>
+              <option value="mailchimp">Mailchimp</option>
+              <option value="klaviyo">Klaviyo</option>
+            </select>
+          </div>
+          <Field label="List ID" value={config.listId || ""} onChange={(v) => update("listId", v)} placeholder="abc123def" />
+        </div>
+        <p className="font-mono text-[11px] text-navy opacity-40">
+          API keys are set as Vercel environment variables (MAILCHIMP_API_KEY or KLAVIYO_API_KEY).
+        </p>
+        {storedSignups > 0 && (
+          <p className="font-body text-sm text-green-700">
+            {storedSignups} email signup{storedSignups !== 1 ? "s" : ""} stored locally (waiting for provider setup).
+          </p>
+        )}
+        <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Email Settings</button>
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // STOCK PHOTOS EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────────────────
+  // FAQ EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const FAQ_CATEGORIES = ["Dining", "Reservations", "Policies", "Events"];
+  const FAQEditor = () => {
+    const [items, setItems] = useState(JSON.parse(JSON.stringify(siteData.faq || [])));
+    const sensors = useSensors(useSensor(PointerSensor), useSensor(TouchSensor));
+    const update = (i, field, value) => setItems(items.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+    const add = () => setItems([...items, { id: Date.now(), question: "", answer: "", category: "Dining" }]);
+    const remove = (i) => setItems(items.filter((_, idx) => idx !== i));
+    const save = () => updateData("faq", items);
+    const handleDragEnd = (event) => {
+      const { active, over } = event;
+      if (active.id !== over?.id) {
+        const oldIdx = items.findIndex((it) => it.id === active.id);
+        const newIdx = items.findIndex((it) => it.id === over.id);
+        setItems(arrayMove(items, oldIdx, newIdx));
+      }
+    };
+    return (
+      <div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={items.map((it) => it.id)} strategy={verticalListSortingStrategy}>
+            {items.map((item, i) => (
+              <SortableItem key={item.id} id={item.id}>
+                <CollapsibleItem label={item.question || "New Question"} sublabel={item.category} defaultOpen={!item.question} onRemove={() => remove(i)}>
+                  <Field label="Question" value={item.question} onChange={(v) => update(i, "question", v)} placeholder="e.g. What is the dress code?" />
+                  <Field label="Answer" value={item.answer} onChange={(v) => update(i, "answer", v)} multiline placeholder="Enter the answer..." />
+                  <div>
+                    <label className="block font-body text-navy text-sm font-bold mb-1">Category</label>
+                    <select value={item.category} onChange={(e) => update(i, "category", e.target.value)}
+                      className="w-full p-3 rounded border border-navy border-opacity-20 font-body text-sm text-navy bg-white">
+                      {FAQ_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                </CollapsibleItem>
+              </SortableItem>
+            ))}
+          </SortableContext>
+        </DndContext>
+        <div className="flex gap-4 flex-wrap">
+          <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo"><Plus size={14} />Add Question</button>
+          <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save FAQ</button>
+        </div>
+      </div>
+    );
+  };
+
+  const StockPhotosEditor = () => {
+    const saved = siteData.stockPhotos?.events || [];
+    const [photos, setPhotos] = useState(saved.length > 0 ? [...saved] : [...DEFAULT_EVENT_PHOTOS]);
+
+    const update = (i, url) => { const p = [...photos]; p[i] = url; setPhotos(p); };
+    const remove = (i) => setPhotos(photos.filter((_, idx) => idx !== i));
+    const add = () => setPhotos([...photos, ""]);
+    const reset = () => setPhotos([...DEFAULT_EVENT_PHOTOS]);
+    const save = () => updateData("stockPhotos", { ...siteData.stockPhotos, events: photos.filter(Boolean) });
+
+    return (
+      <div className="space-y-4">
+        <p className="font-body text-sm text-navy opacity-60 leading-relaxed">
+          These photos are used as fallbacks for events without a custom image.
+          Each event automatically gets a unique photo from this pool. Upload your own or paste URLs.
+        </p>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {photos.map((url, i) => (
+            <div key={i} className="relative group">
+              {url ? (
+                <img src={url} alt={`Stock ${i + 1}`}
+                  className="w-full h-24 object-cover rounded-lg border border-navy border-opacity-10" />
+              ) : (
+                <div className="w-full h-24 rounded-lg border-2 border-dashed border-navy border-opacity-20
+                  flex items-center justify-center text-navy opacity-30 text-xs">
+                  Empty
+                </div>
+              )}
+              <button onClick={() => remove(i)}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-flamingo text-white rounded-full
+                  flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs">
+                ×
+              </button>
+              <div className="mt-1">
+                <ImageUploader
+                  value={url}
+                  onChange={(v) => update(i, v)}
+                  label=""
+                  height="h-0 overflow-hidden"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-3 items-center">
+          <button onClick={add}
+            className="flex items-center gap-2 bg-navy text-cream font-mono text-xs px-4 py-2 rounded-lg hover:bg-navy-light transition-colors">
+            <Plus size={14} /> Add Photo
+          </button>
+          <button onClick={reset}
+            className="flex items-center gap-2 border border-navy border-opacity-20 text-navy font-mono text-xs px-4 py-2 rounded-lg hover:border-flamingo transition-colors">
+            <Undo2 size={14} /> Reset to Defaults
+          </button>
+          <span className="font-mono text-[10px] text-navy opacity-40">{photos.filter(Boolean).length} photos in pool</span>
+        </div>
+
+        <button onClick={save}
+          className="flex items-center gap-2 bg-flamingo text-white font-mono text-xs tracking-editorial uppercase px-6 py-3 rounded-lg hover:bg-flamingo-dark transition-colors">
+          <Save size={14} /> Save Stock Photos
+        </button>
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // PRIVATE EVENTS EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const PrivateEventsEditor = () => {
+    const [config, setConfig] = useState({ ...siteData.privateEvents });
+    const update = (field, value) => setConfig({ ...config, [field]: value });
+    const save = () => updateData("privateEvents", config);
+
+    const updateInclude = (i, value) => {
+      const updated = [...(config.includes || [])];
+      updated[i] = value;
+      setConfig({ ...config, includes: updated });
+    };
+    const addInclude = () => setConfig({ ...config, includes: [...(config.includes || []), ""] });
+    const removeInclude = (i) => setConfig({ ...config, includes: (config.includes || []).filter((_, idx) => idx !== i) });
+
+    return (
+      <div className="space-y-4">
+        <p className="font-body text-sm text-navy opacity-60 leading-relaxed">
+          Configure the private events inquiry page. Inquiries are sent to your events email.
+        </p>
+        <div className="flex items-center gap-3 mb-2">
+          <input type="checkbox" checked={config.enabled !== false} onChange={(e) => update("enabled", e.target.checked)} className="accent-flamingo w-4 h-4" />
+          <span className="font-body text-sm text-navy font-bold">Enable Private Events Page</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="Max Full Buyout Capacity" value={String(config.maxCapacity || "")} onChange={(v) => update("maxCapacity", parseInt(v) || 0)} placeholder="60" />
+          <Field label="Semi-Private Capacity" value={String(config.semiPrivateCapacity || "")} onChange={(v) => update("semiPrivateCapacity", parseInt(v) || 0)} placeholder="24" />
+        </div>
+        <div>
+          <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-2">What's Included</label>
+          {(config.includes || []).map((item, i) => (
+            <div key={i} className="flex items-center gap-2 mb-2">
+              <input value={item} onChange={(e) => updateInclude(i, e.target.value)}
+                className="flex-1 p-2 rounded border border-navy border-opacity-20 font-body text-sm text-navy" placeholder="Dedicated event coordinator" />
+              <button onClick={() => removeInclude(i)} className="text-navy opacity-30 hover:opacity-60"><Trash2 size={14} /></button>
+            </div>
+          ))}
+          <button onClick={addInclude} className="flex items-center gap-2 font-body text-xs text-flamingo mt-1"><Plus size={12} />Add Item</button>
+        </div>
+        <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Private Events</button>
+      </div>
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // GIFT CARDS EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const GiftCardsEditor = () => {
+    const [config, setConfig] = useState({ ...siteData.giftCards });
+    const update = (field, value) => setConfig({ ...config, [field]: value });
+    const save = () => updateData("giftCards", config);
+
+    return (
+      <div className="space-y-4">
+        <p className="font-body text-sm text-navy opacity-60 leading-relaxed">
+          Enable or disable the gift card balance check feature on the site.
+        </p>
+        <div className="flex items-center gap-3 mb-2">
+          <input type="checkbox" checked={config.balanceCheckEnabled || false} onChange={(e) => update("balanceCheckEnabled", e.target.checked)} className="accent-flamingo w-4 h-4" />
+          <span className="font-body text-sm text-navy font-bold">Enable Balance Check</span>
+        </div>
+        <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Gift Cards</button>
       </div>
     );
   };
@@ -1132,15 +2701,59 @@ const AdminPage = () => {
       <div className="section-padding bg-cream">
         <div className="section-container max-w-4xl px-4 md:px-12">
 
+          {/* Draft mode banner */}
+          {draftMode && (
+            <div className="mb-4 bg-amber-50 border border-amber-300 rounded-lg p-4 flex items-center justify-between flex-wrap gap-3">
+              <p className="font-body text-sm text-amber-800">
+                <strong>Draft Mode</strong> — changes are saved locally only. Publish when ready.
+              </p>
+              <div className="flex gap-2">
+                {hasDraft && (
+                  <>
+                    <button onClick={publishDraft} className="btn-primary py-1.5 px-4 text-xs">
+                      Publish All Changes
+                    </button>
+                    <button onClick={discardDraft}
+                      className="font-body text-xs text-amber-800 hover:text-amber-900 underline underline-offset-2">
+                      Discard Draft
+                    </button>
+                  </>
+                )}
+                <button onClick={() => setDraftMode(false)}
+                  className="font-body text-xs text-amber-600 hover:text-amber-800">
+                  Exit Draft Mode
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Top bar — Logout + How It Works */}
-          <div className="flex justify-between items-center mb-8">
-            <Link
-              to="/admin/how-it-works"
-              className="inline-flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark
-                         border border-flamingo border-opacity-30 hover:border-flamingo rounded-lg px-4 py-2 transition-all"
-            >
-              📖 How This Website Works
-            </Link>
+          <div className="flex justify-between items-center mb-8 flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <Link
+                to="/admin/how-it-works"
+                className="inline-flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark
+                           border border-flamingo border-opacity-30 hover:border-flamingo rounded-lg px-4 py-2 transition-all"
+              >
+                📖 How It Works
+              </Link>
+              <Link
+                to="/admin/value"
+                className="inline-flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark
+                           border border-flamingo border-opacity-30 hover:border-flamingo rounded-lg px-4 py-2 transition-all"
+              >
+                💰 How It Brings Value
+              </Link>
+              {!draftMode && (
+                <button
+                  onClick={() => setDraftMode(true)}
+                  className="inline-flex items-center gap-2 font-body text-sm text-navy opacity-50 hover:opacity-80
+                             border border-navy border-opacity-20 hover:border-navy rounded-lg px-4 py-2 transition-all"
+                >
+                  Draft Mode
+                </button>
+              )}
+            </div>
             <button
               onClick={() => { logout(); navigate("/"); }}
               className="flex items-center gap-2 font-body text-sm text-navy opacity-50 hover:opacity-80 hover:text-flamingo transition-all"
@@ -1154,13 +2767,29 @@ const AdminPage = () => {
           <div className="mb-6"><AdminSection title="Site Settings" defaultOpen={true}><SiteSettingsEditor /></AdminSection></div>
           <div className="mt-6"><AdminSection title="Hero — Text, Buttons &amp; Slideshow"><HeroSlideshowEditor /></AdminSection></div>
           <div className="mt-6"><AdminSection title="Our Story &amp; Team"><AboutEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Weekly Features"><WeeklyFeaturesEditor /></AdminSection></div>
           <div className="mt-6"><AdminSection title="Hours"><HoursEditor /></AdminSection></div>
           <div className="mt-6"><AdminSection title="Location & Map"><LocationEditor /></AdminSection></div>
           <div className="mt-6"><AdminSection title="Menus"><MenuEditor /></AdminSection></div>
           <div className="mt-6"><AdminSection title="Gallery"><GalleryEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Instagram Feed"><InstagramFeedEditor /></AdminSection></div>
           <div className="mt-6"><AdminSection title="Events & Tickets"><EventsEditor /></AdminSection></div>
           <div className="mt-6"><AdminSection title="Paintings"><PrintsEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Merchandise"><MerchEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Bottle Shop"><BottlesEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Daily Specials"><SpecialsEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Testimonials"><TestimonialsEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Popular Now Badges"><PopularNowEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Blog — From the Kitchen"><BlogEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Seasonal Menu Countdown"><SeasonalCountdownEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Email Marketing"><EmailMarketingEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Private Events"><PrivateEventsEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Gift Cards"><GiftCardsEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="SMS Text Club"><SmsClubEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Newsletter"><NewsletterEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="FAQ"><FAQEditor /></AdminSection></div>
           <div className="mt-6"><AdminSection title="Press"><PressEditor /></AdminSection></div>
+          <div className="mt-6"><AdminSection title="Stock Photos"><StockPhotosEditor /></AdminSection></div>
           <div className="mt-6"><AdminSection title="External Links"><LinksEditor /></AdminSection></div>
           <div className="mt-6"><AdminSection title="Contact Emails"><ContactEditor /></AdminSection></div>
 
@@ -1203,6 +2832,18 @@ const AdminPage = () => {
           </div>
         </div>
       </div>
+      {/* Undo toast — appears after any save */}
+      {canUndo && (
+        <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
+          <button
+            onClick={undo}
+            className="flex items-center gap-2 bg-navy text-cream font-body text-sm px-5 py-3
+                       rounded-lg shadow-xl hover:bg-flamingo transition-colors"
+          >
+            <Undo2 size={16} /> Undo Last Save
+          </button>
+        </div>
+      )}
     </PageLayout>
   );
 };

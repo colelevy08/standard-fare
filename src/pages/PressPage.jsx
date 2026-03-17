@@ -12,7 +12,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/layout/PageLayout";
 import { useSite } from "../context/AdminContext";
 
@@ -35,27 +36,19 @@ const PressCard = ({ outlet, headline, url, logo }) => {
       {/* ── Logo / Publication Header ────────────────────── */}
       <div className="bg-white flex items-center justify-center p-6 min-h-[100px] border-b border-navy border-opacity-10">
         {logo && !logoError ? (
-          // Show the logo image, fall back to outlet name text if it errors
           <img
             src={logo}
             alt={`${outlet} logo`}
             onLoad={() => setLogoLoaded(true)}
             onError={() => setLogoError(true)}
-            className={`max-h-12 max-w-[180px] object-contain transition-opacity duration-300
+            className={`w-10 h-10 object-contain transition-opacity duration-300
               ${logoLoaded ? "opacity-100" : "opacity-0"}`}
           />
         ) : null}
 
-        {/* Show outlet name as text if no logo or logo failed */}
-        {(!logo || logoError) && (
+        {/* Show outlet name as text only if no logo or logo failed */}
+        {(!logo || logoError || !logoLoaded) && (
           <p className="font-mono text-navy text-sm tracking-editorial uppercase font-bold text-center">
-            {outlet}
-          </p>
-        )}
-
-        {/* While logo is loading (before onLoad fires) show the outlet name underneath */}
-        {logo && !logoError && !logoLoaded && (
-          <p className="font-mono text-navy text-xs tracking-editorial uppercase opacity-40">
             {outlet}
           </p>
         )}
@@ -124,6 +117,32 @@ const PressPage = () => {
             </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Blog card — first position */}
+              <Link to="/blog"
+                className="group flex flex-col bg-cream-warm border border-navy border-opacity-10 rounded-lg
+                           overflow-hidden hover:border-flamingo hover:shadow-lg transition-all duration-300">
+                <div className="bg-navy flex items-center justify-center p-6 min-h-[100px] border-b border-navy border-opacity-10">
+                  <BookOpen size={28} className="text-flamingo" />
+                </div>
+                <div className="p-6 flex flex-col flex-1 justify-between">
+                  <div>
+                    <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-2">
+                      Our Blog
+                    </p>
+                    <h3 className="font-display text-navy text-base leading-snug group-hover:text-flamingo-dark transition-colors">
+                      From the Kitchen
+                    </h3>
+                    <p className="font-body text-navy opacity-50 text-xs mt-2">
+                      Read our own stories — chef notes, sourcing, and behind the scenes.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-5 font-body text-xs text-navy opacity-40 group-hover:opacity-80 transition-opacity">
+                    <BookOpen size={12} />
+                    <span>Visit Blog</span>
+                  </div>
+                </div>
+              </Link>
+
               {press.map((item) => (
                 <PressCard key={item.id} {...item} />
               ))}

@@ -23,6 +23,7 @@
 import React, { useRef, useState } from "react";
 import { Upload, X, Link, Loader } from "lucide-react";
 import { uploadImage } from "../../lib/supabaseStorage";
+import resizeImage from "../../lib/imageResize";
 
 const ImageUploader = ({ value, onChange, label = "Image", height = "h-40" }) => {
   const fileInputRef              = useRef(null);
@@ -45,8 +46,11 @@ const ImageUploader = ({ value, onChange, label = "Image", height = "h-40" }) =>
     setUploadErr("");
     setUploading(true);
 
+    // Resize large images before upload (caps at 1800px, JPEG 85%)
+    const processedFile = await resizeImage(file);
+
     // Try Supabase Storage first
-    const { url } = await uploadImage(file);
+    const { url } = await uploadImage(processedFile);
 
     if (url) {
       // Got a permanent Supabase Storage URL

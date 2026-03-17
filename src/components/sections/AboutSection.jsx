@@ -11,7 +11,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState } from "react";
-import { ExternalLink, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ExternalLink, X, Mic } from "lucide-react";
 import { useSite } from "../../context/AdminContext";
 
 const HARDCODED_TEAM = [
@@ -43,7 +44,7 @@ const linkifyBocage = (text, bocageUrl) => {
     if (i < parts.length - 1) {
       acc.push(
         <a key={i} href={bocageUrl} target="_blank" rel="noopener noreferrer"
-          className="text-flamingo hover:text-flamingo-light underline underline-offset-2 transition-colors inline-flex items-baseline gap-1">
+          className="text-gold hover:text-gold-light underline underline-offset-2 transition-colors inline-flex items-baseline gap-1">
           {PHRASE}<ExternalLink size={11} className="opacity-70 relative top-px" />
         </a>
       );
@@ -87,6 +88,45 @@ const BioModal = ({ member, onClose }) => {
               {para}
             </p>
           ))}
+
+          {/* Podcast link — Zac only */}
+          {member.name === "Zac Denham" && (
+            <div className="mt-6 border-t border-cream border-opacity-10 pt-5">
+              <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">Listen</p>
+              <a href="https://open.spotify.com/show/50jZNqIDQh9BZfRvmkYNwX"
+                target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-3 bg-cream bg-opacity-5 border border-cream border-opacity-15
+                  rounded-lg px-4 py-3 group hover:border-flamingo hover:bg-opacity-10 transition-all">
+                <Mic size={18} className="text-flamingo flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-display text-cream text-sm group-hover:text-flamingo-light transition-colors">
+                    Off Track Saratoga Podcast
+                  </p>
+                  <p className="font-body text-cream opacity-50 text-xs mt-0.5">
+                    Co-hosted with Emmy Award-winning journalist Noel McLaren
+                  </p>
+                </div>
+                <ExternalLink size={13} className="text-flamingo opacity-40 group-hover:opacity-80 transition-opacity flex-shrink-0" />
+              </a>
+              <div className="flex gap-3 mt-2">
+                <a href="https://podcasts.apple.com/us/podcast/off-track-saratoga-podcast/id1880556768"
+                  target="_blank" rel="noopener noreferrer"
+                  className="font-body text-cream opacity-40 text-xs hover:text-flamingo hover:opacity-100 transition-all">
+                  Apple Podcasts
+                </a>
+                <a href="https://open.spotify.com/show/50jZNqIDQh9BZfRvmkYNwX"
+                  target="_blank" rel="noopener noreferrer"
+                  className="font-body text-cream opacity-40 text-xs hover:text-flamingo hover:opacity-100 transition-all">
+                  Spotify
+                </a>
+                <a href="https://music.amazon.com/podcasts/bc0c5413-1a50-4e3c-89c7-fa4cf6d165ee"
+                  target="_blank" rel="noopener noreferrer"
+                  className="font-body text-cream opacity-40 text-xs hover:text-flamingo hover:opacity-100 transition-all">
+                  Amazon Music
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -96,7 +136,7 @@ const BioModal = ({ member, onClose }) => {
 // ── AboutSection ──────────────────────────────────────────────────────────
 const AboutSection = () => {
   const { siteData } = useSite();
-  const { heading, body, team, imageUrl, bocageUrl } = siteData.about;
+  const { heading, body, team, bocageUrl } = siteData.about;
   const [activeMember, setActiveMember] = useState(null);
 
   // Merge context team data with hardcoded fallbacks.
@@ -121,117 +161,102 @@ const AboutSection = () => {
       <BioModal member={activeMember} onClose={() => setActiveMember(null)} />
 
       <section id="about" className="section-padding bg-navy">
-        <div className="section-container">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
+        <div className="section-container max-w-3xl">
+          <div className="text-center mb-8">
+            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">Our Story</p>
+            <h2 className="font-display text-cream text-2xl sm:text-3xl md:text-4xl leading-tight">
+              {heading}
+            </h2>
+            <span className="block w-12 h-px bg-flamingo mx-auto mt-5" />
+          </div>
 
-            {/* ── LEFT COLUMN: story + founders together ── */}
-            <div>
-              <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4">Our Story</p>
-              <h2 className="font-display text-cream text-2xl sm:text-3xl md:text-4xl leading-tight mb-5">
-                {heading}
-              </h2>
-              <span className="block w-12 h-px bg-flamingo mb-7" />
+          <div className="text-center">
+            {(body || "").split("\n\n").map((para, i) => (
+              <p key={i} className="font-body text-cream opacity-80 leading-relaxed mb-4 text-sm sm:text-base">
+                {bocageUrl ? linkifyBocage(para, bocageUrl) : para}
+              </p>
+            ))}
+          </div>
 
-              {(body || "").split("\n\n").map((para, i) => (
-                <p key={i} className="font-body text-cream opacity-80 leading-relaxed mb-4 text-sm sm:text-base">
-                  {bocageUrl ? linkifyBocage(para, bocageUrl) : para}
-                </p>
-              ))}
+          {/* ── Founders ── */}
+          <div className="mt-10">
+            <Link to="/team"
+              className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-6 text-center block hover:text-flamingo-dark transition-colors">
+              Meet the Founders &rarr;
+            </Link>
 
-
-
-              {/* ── Founders — directly under the text, no divider ── */}
-              <div className="mt-8">
-                {/* Label stays at the top */}
-                <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-6">
-                  Meet the Founders
-                </p>
-
-                <div className="flex gap-8">
-                  {teamData.map((member) => (
-                    <button
-                      key={member.name}
-                      onClick={() => setActiveMember(member)}
-                      className="flex flex-col items-center text-center group cursor-pointer"
-                      aria-label={`View ${member.name}'s bio`}
-                    >
-                      {/* Circle portrait */}
-                      <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden
-                                      ring-2 ring-cream ring-opacity-10
-                                      group-hover:ring-flamingo group-hover:ring-opacity-60
-                                      transition-all duration-300 shadow-lg flex-shrink-0">
-                        {member.photo ? (
-                          <img
-                            src={member.photo}
-                            alt={member.name}
-                            className={`w-full h-full object-cover
-                              ${member.name === "Zac Denham"
-                                ? "object-[center_18%] scale-[1.4] origin-top"
-                                : "object-top"
-                              }
-                              transition-transform duration-500 group-hover:scale-110`}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-navy-light">
-                            <span className="font-display text-flamingo text-2xl">
-                              {member.name.split(" ").map((w) => w[0]).join("")}
-                            </span>
-                          </div>
-                        )}
+            <div className="flex justify-center gap-8">
+              {teamData.map((member) => (
+                <button
+                  key={member.name}
+                  onClick={() => setActiveMember(member)}
+                  className="flex flex-col items-center text-center group cursor-pointer"
+                  aria-label={`View ${member.name}'s bio`}
+                >
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden
+                                  ring-2 ring-cream ring-opacity-10
+                                  group-hover:ring-flamingo group-hover:ring-opacity-60
+                                  transition-all duration-300 shadow-lg flex-shrink-0">
+                    {member.photo ? (
+                      <img
+                        src={member.photo}
+                        alt={member.name}
+                        className={`w-full h-full object-cover
+                          ${member.name === "Zac Denham"
+                            ? "object-[center_18%] scale-[1.4] origin-top"
+                            : "object-top"
+                          }
+                          transition-transform duration-500 group-hover:scale-110`}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-navy-light">
+                        <span className="font-display text-flamingo text-2xl">
+                          {member.name.split(" ").map((w) => w[0]).join("")}
+                        </span>
                       </div>
+                    )}
+                  </div>
+                  <h4 className="font-display text-cream text-base leading-tight mt-3 mb-0.5
+                                 group-hover:text-flamingo-light transition-colors">
+                    {member.name}
+                  </h4>
+                  <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-1">
+                    {member.role}
+                  </p>
+                  <p className="font-body text-cream opacity-30 text-xs group-hover:opacity-60 transition-opacity">
+                    Read bio →
+                  </p>
+                </button>
+              ))}
+            </div>
 
-                      {/* Name, title, hint — below the photo */}
-                      <h4 className="font-display text-cream text-base leading-tight mt-3 mb-0.5
-                                     group-hover:text-flamingo-light transition-colors">
-                        {member.name}
-                      </h4>
-                      <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-1">
-                        {member.role}
-                      </p>
-                      <p className="font-body text-cream opacity-30 text-xs group-hover:opacity-60 transition-opacity">
-                        Read bio →
-                      </p>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Single Bocage link beneath both photos */}
-                {bocageUrl && (
-                  <a
-                    href={bocageUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-5 flex items-center gap-4 border border-flamingo border-opacity-30
-                               rounded-lg px-5 py-4 group hover:border-flamingo hover:bg-flamingo
-                               hover:bg-opacity-5 transition-all duration-300 w-fit"
-                  >
-                    <span className="text-xl">🥂</span>
-                    <div>
-                      <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-0.5">
-                        Also from our team
-                      </p>
-                      <p className="font-display text-cream text-sm group-hover:text-flamingo-light transition-colors">
-                        {siteData.about.bocageLabel || "Bocage Champagne Bar"}
-                      </p>
-                      <p className="font-body text-cream opacity-50 text-xs mt-0.5">
-                        {siteData.about.bocageSublabel || "10 Phila St · Saratoga Springs"}
-                      </p>
-                    </div>
-                    <ExternalLink size={13} className="text-flamingo opacity-40 group-hover:opacity-80 ml-auto transition-opacity" />
-                  </a>
-                )}
+            {/* Bocage link */}
+            {bocageUrl && (
+              <div className="flex justify-center mt-5">
+                <a
+                  href={bocageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 border border-gold border-opacity-30
+                             rounded-lg px-5 py-4 group hover:border-gold hover:bg-gold
+                             hover:bg-opacity-5 transition-all duration-300"
+                >
+                  <span className="text-xl">🥂</span>
+                  <div>
+                    <p className="font-mono text-gold text-xs tracking-editorial uppercase mb-0.5">
+                      Also from our team
+                    </p>
+                    <p className="font-display text-cream text-sm group-hover:text-gold-light transition-colors">
+                      {siteData.about.bocageLabel || "Bocage Champagne Bar"}
+                    </p>
+                    <p className="font-body text-cream opacity-50 text-xs mt-0.5">
+                      {siteData.about.bocageSublabel || "10 Phila St · Saratoga Springs"}
+                    </p>
+                  </div>
+                  <ExternalLink size={13} className="text-gold opacity-40 group-hover:opacity-80 ml-auto transition-opacity" />
+                </a>
               </div>
-            </div>
-
-            {/* ── RIGHT COLUMN: restaurant photo ── */}
-            <div className="relative mt-4 lg:mt-0">
-              {isValidUrl(imageUrl) && (
-              <img src={imageUrl} alt="Standard Fare restaurant"
-                className="w-full h-64 sm:h-80 lg:h-[500px] object-cover rounded shadow-2xl" />
-              )}
-              <div className="absolute -bottom-3 -right-3 sm:-bottom-4 sm:-right-4 w-full h-full border-2 border-flamingo rounded -z-10 opacity-40" />
-            </div>
-
+            )}
           </div>
         </div>
       </section>

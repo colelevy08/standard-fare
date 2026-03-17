@@ -7,8 +7,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState } from "react";
+import { Download } from "lucide-react";
 import PageLayout from "../components/layout/PageLayout";
 import { useSite } from "../context/AdminContext";
+import { generateMenuPdf } from "../hooks/useMenuPdf";
 
 // Tabs in display order
 const TABS = ["brunch", "dinner", "drinks", "wine", "dessert"];
@@ -87,6 +89,19 @@ const MenuPage = () => {
         </p>
         <h1 className="font-display text-cream text-4xl md:text-5xl">Our Menus</h1>
         <span className="block w-16 h-px bg-flamingo mx-auto mt-6" />
+      </div>
+
+      {/* Download menu button */}
+      <div className="bg-navy text-center pb-4">
+        <button
+          onClick={() => generateMenuPdf(menus, "Standard Fare")}
+          className="inline-flex items-center gap-2 font-body text-xs text-cream opacity-50
+                     hover:opacity-100 hover:text-flamingo transition-all border border-cream
+                     border-opacity-20 hover:border-flamingo rounded-full px-4 py-2"
+        >
+          <Download size={13} />
+          Download Menu PDF
+        </button>
       </div>
 
       {/* Tab bar */}
