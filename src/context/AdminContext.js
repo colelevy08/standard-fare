@@ -118,6 +118,7 @@ const deepMerge = (saved) => {
     hoursOverride:   saved.hoursOverride   ? { ...defaultSiteData.hoursOverride,   ...saved.hoursOverride   } : defaultSiteData.hoursOverride,
     weeklyFeatures:  saved.weeklyFeatures  ? { ...defaultSiteData.weeklyFeatures,  ...saved.weeklyFeatures  } : defaultSiteData.weeklyFeatures,
     stockPhotos:     saved.stockPhotos     ? { ...defaultSiteData.stockPhotos,     ...saved.stockPhotos     } : defaultSiteData.stockPhotos,
+    googleRating: saved.googleRating ? { ...defaultSiteData.googleRating, ...saved.googleRating } : defaultSiteData.googleRating,
     faq:      saved.faq      ?? defaultSiteData.faq,
     prints:   saved.prints   ?? defaultSiteData.prints,
     hours:    saved.hours    ?? defaultSiteData.hours,

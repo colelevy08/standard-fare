@@ -98,10 +98,16 @@ const TestimonialCard = ({ review, onClick }) => (
 /* ── Section ──────────────────────────────────────────────────────────────── */
 const TestimonialsSection = () => {
   const { siteData } = useSite();
-  const { reviews: googleReviews, rating, totalReviews } = useGoogleReviews();
+  const { reviews: googleReviews, rating: scrapedRating, totalReviews: scrapedTotal } = useGoogleReviews();
   const manualReviews = siteData.testimonials || [];
   const scrollRef = useRef(null);
   const [selectedReview, setSelectedReview] = useState(null);
+
+  // Admin-set rating/count override scraped values (scraped data is often stale)
+  const adminRating = siteData.googleRating?.rating;
+  const adminCount  = siteData.googleRating?.count;
+  const rating       = adminRating ?? scrapedRating;
+  const totalReviews = adminCount  ?? scrapedTotal;
 
   // Use Google reviews if available, otherwise fall back to manual
   const reviews = googleReviews.length > 0 ? googleReviews : manualReviews;

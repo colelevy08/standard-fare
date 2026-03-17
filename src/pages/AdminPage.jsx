@@ -1790,6 +1790,36 @@ const AdminPage = () => {
   };
 
   // ───────────────────────────────────────────────────────────────────────────
+  // GOOGLE RATING EDITOR
+  // ───────────────────────────────────────────────────────────────────────────
+  const GoogleRatingEditor = () => {
+    const gr = siteData.googleRating || { rating: 4.6, count: 78 };
+    const [gRating, setGRating] = useState(gr.rating);
+    const [gCount, setGCount] = useState(gr.count);
+    const saveRating = () => updateData("googleRating", { rating: parseFloat(gRating) || 0, count: parseInt(gCount, 10) || 0 });
+    return (
+      <div className="mb-4 bg-cream-warm border border-navy border-opacity-10 rounded-lg p-4">
+        <p className="font-body text-sm text-navy font-bold mb-1">Google Aggregate Rating</p>
+        <p className="font-body text-xs text-navy opacity-50 mb-3">
+          Shown above the reviews section. Update when your Google rating changes.
+        </p>
+        <div className="flex items-center gap-4 flex-wrap">
+          <label className="flex items-center gap-2">
+            <span className="font-body text-xs text-navy">Rating</span>
+            <input type="number" step="0.1" min="1" max="5" value={gRating} onChange={(e) => setGRating(e.target.value)}
+              className="input-field w-20 text-center" />
+          </label>
+          <label className="flex items-center gap-2">
+            <span className="font-body text-xs text-navy">Total reviews</span>
+            <input type="number" min="0" value={gCount} onChange={(e) => setGCount(e.target.value)}
+              className="input-field w-24 text-center" />
+          </label>
+          <button onClick={saveRating} className="btn-primary py-2 px-4 text-xs">Save Rating</button>
+        </div>
+      </div>
+    );
+  };
+
   // TESTIMONIALS EDITOR
   // ───────────────────────────────────────────────────────────────────────────
   const TestimonialsEditor = () => {
@@ -1837,6 +1867,9 @@ const AdminPage = () => {
 
     return (
       <div>
+        {/* Google aggregate rating (admin-editable) */}
+        <GoogleRatingEditor />
+
         {/* Google sync banner */}
         <div className="mb-4 bg-cream-warm border border-navy border-opacity-10 rounded-lg p-4">
           <div className="flex items-center justify-between flex-wrap gap-3">

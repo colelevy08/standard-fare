@@ -957,6 +957,12 @@ const defaultSiteData = {
     events: [], // empty = use built-in 50-photo pool from eventPhotos.js
   },
 
+  // ── Google Rating (admin-editable, overrides scraped data) ────────────────
+  googleRating: {
+    rating: 4.6,
+    count: 78,
+  },
+
   // ── FAQ ───────────────────────────────────────────────────────────────────
   faq: [
     { id: 1, question: "What is the dress code?", answer: "We welcome smart casual attire. While there's no strict dress code, we ask that guests refrain from wearing athletic wear, flip-flops, or beach attire.", category: "Dining" },
