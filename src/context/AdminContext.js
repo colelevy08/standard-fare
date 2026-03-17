@@ -7,7 +7,7 @@ import supabase from "../lib/supabase";
 
 const STORAGE_KEY    = "standard_fare_site_data";
 const VERSION_KEY    = "standard_fare_data_version";
-const DATA_VERSION   = 12; // ← bumped: add hoursOverride, weeklyFeatures, stockPhotos, faq to Supabase merge
+const DATA_VERSION   = 13; // ← bumped: real Google reviews + googleRating section
 const SUPABASE_TABLE = "site_content";
 const SUPABASE_ROW   = 1;
 
