@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     const searchRes = await fetch(searchUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        Authorization: 'ResyAPI api_key="VbWk7s3L4KiK5fzlO7JD3Q5EYolJI7n5"',
+        Authorization: `ResyAPI api_key="${process.env.RESY_API_KEY || "VbWk7s3L4KiK5fzlO7JD3Q5EYolJI7n5"}"`,
       },
     });
 
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
     const availRes = await fetch(availUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        Authorization: 'ResyAPI api_key="VbWk7s3L4KiK5fzlO7JD3Q5EYolJI7n5"',
+        Authorization: `ResyAPI api_key="${process.env.RESY_API_KEY || "VbWk7s3L4KiK5fzlO7JD3Q5EYolJI7n5"}"`,
       },
     });
 
