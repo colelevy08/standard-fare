@@ -131,11 +131,9 @@ const WeeklyFeatures = () => {
           ))}
         </div>
 
-        <div className="text-center mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="text-center mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Link to="/menu" className="btn-ghost">View Full Menu</Link>
-          <Link to="/order" className="inline-block bg-flamingo text-cream font-body font-bold tracking-widest uppercase text-xs px-8 py-3 rounded hover:bg-opacity-90 transition-colors">
-            Order Now
-          </Link>
+          <Link to="/order" className="btn-primary">Order Now</Link>
         </div>
       </div>
     </section>
