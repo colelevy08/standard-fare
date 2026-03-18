@@ -83,19 +83,19 @@ A modern, fully-editable restaurant website with a built-in CMS, cloud-synced co
 - Full-screen hero slideshow with editable text & CTAs
 - Dynamic menus — brunch, dinner, cocktails, wine, dessert with PDF download
 - On-site pickup ordering — browse menu, add items, checkout (separate cart from shop)
-- Instagram-linked photo gallery with lightbox
+- Interactive photo gallery with profile card modals + Instagram links
 - Auto-pulled Instagram feed — 3 most recent posts, refreshed every 12 hours
 - Real Google Reviews — scraped automatically, 5-star only, 12-hour refresh
-- Ticketed events with Resy/Toast integration
+- Ticketed events with profile card modals + Resy/Toast integration
 - Artist paintings shop with auto-import from Big Cartel + stock limits
 - Daniel Fairley product showcase with artist bio
 - Branded merchandise store with variants and sizing
 - Blog / "From the Kitchen" — chef stories, sourcing, behind-the-scenes (SEO)
-- Press coverage with publication logos + downloadable press kit
+- Press coverage with profile card modals, publication logos + downloadable press kit
 - Private events inquiry form with structured fields
 - Real-time Resy table availability widget
 - Gift card purchase page + balance checker (via Toast API)
-- "This Week's Features" — highlighted dishes on homepage
+- "This Week's Features" — clickable dishes with profile cards, "View Full Menu" & "Order Now" CTAs
 - FAQ page — accordion-style with category filters
 - Happy hour / specials banner with live countdown timer
 - Hours override banner for holidays & closures
@@ -236,7 +236,8 @@ These features run automatically with no manual intervention:
 | Feature | Source | Refresh | Admin Override |
 |:--------|:-------|:--------|:---------------|
 | **Instagram Feed** | @standardfaresaratoga via `/api/instagram-feed` | Every 12 hours | Force refresh button in admin |
-| **Google Reviews** | Google via Wanderlog scrape at `/api/google-reviews` | Every 12 hours | "Pull from Google" button in admin |
+| **Google Reviews** | 67 real 5-star reviews in `googleReviews.js` + live scrape at `/api/google-reviews` | Bundled + 12hr refresh | "Pull from Google" button in admin |
+| **Press Coverage** | Google News RSS via `/api/press-refresh` | Every 12 hours | Auto-filters negative articles |
 | **Paintings Catalog** | Big Cartel (poemdexter) via `/api/bigcartel-products` | Daily | "Sync Now" button in admin |
 | **Resy Availability** | Resy API via `/api/resy-availability` | Every 5 min (CDN) | Shown on Contact page |
 | **Gift Card Balance** | Toast API via `/api/gift-card-balance` | Real-time | Checker on Contact page |
@@ -316,6 +317,8 @@ standard-fare/
 │   ├── instagram-thumb.js             Extract og:image from individual posts
 │   ├── google-reviews.js              Scrape 5-star Google reviews via Wanderlog
 │   ├── bigcartel-products.js          Proxy Daniel Fairley's Big Cartel shop
+│   ├── gift-card-purchase.js           Purchase e-gift cards via Toast API
+│   ├── press-refresh.js               Auto-pull press coverage from Google News
 │   ├── toast-order.js                 Submit orders to Toast POS
 │   ├── gift-card-balance.js           Check gift card balance via Toast API
 │   ├── email-signup.js                Email signup (Mailchimp / Klaviyo)
@@ -333,7 +336,9 @@ standard-fare/
 │   │   ├── PickupCartContext.js       Separate cart for food pickup orders
 │   │   └── LanguageContext.js         Multi-language i18n (EN/ES/FR/ZH/JA)
 │   ├── data/
-│   │   └── siteData.js                Default content (single source of truth)
+│   │   ├── siteData.js                Default content (single source of truth)
+│   │   ├── googleReviews.js           67 real 5-star Google reviews
+│   │   └── eventPhotos.js             Event stock photo pool
 │   ├── hooks/
 │   │   ├── useInstagramFeed.js        Auto-pull Instagram feed with 12hr cache
 │   │   ├── useGoogleReviews.js        Auto-pull Google reviews with 12hr cache
@@ -347,7 +352,7 @@ standard-fare/
 │   │   ├── layout/                    Navbar, Footer, PageLayout
 │   │   ├── sections/                  Hero, About, Hours, Testimonials, Email, Countdown, Resy, GiftCard, SpecialsBanner
 │   │   ├── cart/                      AddToCartButton, CartDrawer
-│   │   └── ui/                        FlamingoIcon, PreviewGate, ImageUploader, LanguageSwitcher
+│   │   └── ui/                        FlamingoIcon, PreviewGate, ImageUploader, LanguageSwitcher, ItemDetailModal, ProfileCardModal, StickyMobileCTA
 │   ├── pages/
 │   │   ├── HomePage.jsx               All homepage sections composed
 │   │   ├── MenuPage.jsx               Tabbed multi-menu view + PDF download
@@ -370,6 +375,7 @@ standard-fare/
 │   │   ├── AdminPage.jsx              Full CMS dashboard
 │   │   ├── HowItWorksPage.jsx         Owner guide — managing the site
 │   │   └── ValuePage.jsx              Owner guide — business value breakdown
+│   ├── components/ScrollToTop.jsx     Scroll-to-top on route change
 │   ├── App.js                         Route definitions
 │   └── index.css                      Tailwind directives + custom styles
 ├── tailwind.config.js                 Brand colors, fonts, animations

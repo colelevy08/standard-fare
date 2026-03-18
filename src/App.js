@@ -8,6 +8,7 @@ import { CartProvider } from "./context/CartContext";
 import { PickupCartProvider } from "./context/PickupCartContext";
 import PreviewGate from "./components/PreviewGate"; // Password gate for owner preview
 import CartDrawer from "./components/cart/CartDrawer";
+import ScrollToTop from "./components/ScrollToTop";
 
 // Page components
 import HomePage       from "./pages/HomePage";
@@ -39,6 +40,7 @@ const App = () => (
       <PickupCartProvider>
       <PreviewGate>
         <BrowserRouter>
+          <ScrollToTop />
           <CartDrawer />
           <Routes>
             <Route path="/"        element={<HomePage />} />

@@ -30,6 +30,7 @@ import TestimonialsSection from "../components/sections/TestimonialsSection";
 import SpecialsBanner from "../components/sections/SpecialsBanner";
 import SeasonalCountdown from "../components/sections/SeasonalCountdown";
 import ItemDetailModal from "../components/ui/ItemDetailModal";
+import ProfileCardModal from "../components/ui/ProfileCardModal";
 import AddToCartButton from "../components/cart/AddToCartButton";
 import { useSite } from "../context/AdminContext";
 import { getEventPhoto, resetEventPhotos, setStockPhotoPool } from "../data/eventPhotos";
@@ -91,6 +92,7 @@ const TAG_COLORS = {
 
 const WeeklyFeatures = () => {
   const { siteData } = useSite();
+  const [selected, setSelected] = useState(null);
   const wf = siteData.weeklyFeatures || {};
   if (!wf.enabled || !wf.items || wf.items.length === 0) return null;
 
@@ -107,19 +109,33 @@ const WeeklyFeatures = () => {
           <span className="section-divider" />
         </div>
 
+        <ProfileCardModal
+          item={selected ? { ...selected, type: "feature" } : null}
+          onClose={() => setSelected(null)}
+        />
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {wf.items.map((item) => (
-            <div key={item.id} className="bg-navy-light rounded-lg p-6 flex flex-col">
+            <div key={item.id}
+              className="bg-navy-light rounded-lg p-6 flex flex-col cursor-pointer group hover:bg-opacity-80 transition-all"
+              onClick={() => setSelected(item)}>
               {item.tag && (
                 <span className={`inline-block self-start font-mono text-[10px] tracking-editorial uppercase px-3 py-1 rounded-full mb-3 ${TAG_COLORS[item.tag] || "bg-flamingo text-white"}`}>
                   {item.tag}
                 </span>
               )}
-              <h3 className="font-display text-cream text-lg mb-2">{item.name}</h3>
-              <p className="font-body text-cream opacity-60 text-sm leading-relaxed flex-1">{item.description}</p>
+              <h3 className="font-display text-cream text-lg mb-2 group-hover:text-flamingo transition-colors">{item.name}</h3>
+              <p className="font-body text-cream opacity-60 text-sm leading-relaxed flex-1 line-clamp-2">{item.description}</p>
               <p className="font-display text-flamingo text-lg mt-4">${item.price}</p>
             </div>
           ))}
+        </div>
+
+        <div className="text-center mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+          <Link to="/menu" className="btn-ghost">View Full Menu</Link>
+          <Link to="/order" className="inline-block bg-flamingo text-cream font-body font-bold tracking-widest uppercase text-xs px-8 py-3 rounded hover:bg-opacity-90 transition-colors">
+            Order Now
+          </Link>
         </div>
       </div>
     </section>
@@ -129,6 +145,7 @@ const WeeklyFeatures = () => {
 // ── Events Preview ────────────────────────────────────────────────────────
 const EventsPreview = () => {
   const { siteData } = useSite();
+  const [selected, setSelected] = useState(null);
   resetEventPhotos();
   setStockPhotoPool(siteData.stockPhotos?.events);
   const today = new Date(); today.setHours(0,0,0,0);
@@ -147,6 +164,21 @@ const EventsPreview = () => {
   const isMixed = upcoming.length > 0 && upcoming.length < TARGET && past.length > 0;
   const allPast = upcoming.length === 0;
 
+  const openEvent = (ev) => {
+    const isPast = new Date(ev.date) < today;
+    const photo = ev.imageUrl || getEventPhoto(ev.id);
+    setSelected({
+      ...ev,
+      type: "event",
+      name: ev.title,
+      imageUrl: photo,
+      date: formatDate(ev.date),
+      venue: ev.venue === "bocage" ? "Bocage Champagne Bar" : "Standard Fare",
+      externalUrl: !isPast && ev.ticketUrl ? ev.ticketUrl : null,
+      externalLabel: "Get Tickets",
+    });
+  };
+
   return (
     <section className="section-padding bg-navy">
       <div className="section-container">
@@ -160,12 +192,18 @@ const EventsPreview = () => {
           <span className="section-divider" />
         </div>
 
+        <ProfileCardModal
+          item={selected}
+          onClose={() => setSelected(null)}
+        />
+
         <ScrollRow>
           {display.map((ev) => {
             const isPast = new Date(ev.date) < today;
             const photo = ev.imageUrl || getEventPhoto(ev.id);
             return (
-              <div key={ev.id} className={`${ITEM_WIDTH} min-w-[220px]`}>
+              <div key={ev.id} className={`${ITEM_WIDTH} min-w-[220px] cursor-pointer`}
+                onClick={() => openEvent(ev)}>
                 <div className={`bg-navy-light rounded-lg overflow-hidden group h-full flex flex-col
                   ${isPast ? "opacity-70" : ""}`}>
                   <div className="relative">
@@ -183,12 +221,15 @@ const EventsPreview = () => {
                         Past
                       </span>
                     )}
+                    <div className="absolute inset-0 bg-navy bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center">
+                      <span className="font-body text-cream text-xs opacity-0 group-hover:opacity-100 transition-opacity">View Details</span>
+                    </div>
                   </div>
                   <div className="p-4 flex flex-col flex-1">
                     <p className="font-mono text-flamingo text-[10px] tracking-editorial uppercase mb-1">
                       {formatDate(ev.date)} · {ev.time}
                     </p>
-                    <h3 className="font-display text-cream text-sm mb-2 line-clamp-2">{ev.title}</h3>
+                    <h3 className="font-display text-cream text-sm mb-2 line-clamp-2 group-hover:text-flamingo transition-colors">{ev.title}</h3>
                     <div className="mt-auto flex items-center justify-between pt-2">
                       {isPast ? (
                         <span className="font-body text-cream opacity-40 text-xs italic">Event has ended</span>
@@ -196,10 +237,9 @@ const EventsPreview = () => {
                         <>
                           <span className="font-display text-cream text-sm">${ev.price}</span>
                           {ev.ticketUrl && (
-                            <a href={ev.ticketUrl} target="_blank" rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-flamingo hover:text-flamingo-light text-xs font-body transition-colors">
+                            <span className="flex items-center gap-1 text-flamingo text-xs font-body">
                               <Ticket size={12} /> Tickets
-                            </a>
+                            </span>
                           )}
                         </>
                       )}
@@ -284,7 +324,24 @@ const BottlePreview = () => {
 // Single row: 6 on desktop, 3 on mobile — no multi-row grid
 const GalleryPreview = () => {
   const { siteData } = useSite();
+  const [selected, setSelected] = useState(null);
   const photos = siteData.gallery.slice(0, 6);
+
+  const openPhoto = (photo) => {
+    const src = photo.url || photo.imageUrl || null;
+    const postUrl = photo.instagramUrl
+      || (photo.instagramId ? `https://www.instagram.com/p/${photo.instagramId}/` : null)
+      || siteData.links.instagram;
+    setSelected({
+      ...photo,
+      type: "gallery",
+      imageUrl: src,
+      name: photo.comment || photo.alt || "Gallery Photo",
+      description: photo.comment || null,
+      externalUrl: postUrl,
+      externalLabel: "View on Instagram",
+    });
+  };
 
   return (
     <section className="section-padding bg-cream-warm">
@@ -295,16 +352,19 @@ const GalleryPreview = () => {
           <span className="section-divider" />
         </div>
 
+        <ProfileCardModal
+          item={selected}
+          onClose={() => setSelected(null)}
+        />
+
         <ScrollRow>
           {photos.map((photo) => {
             const src = photo.url || photo.imageUrl || null;
-            const postUrl = photo.instagramUrl
-              || (photo.instagramId ? `https://www.instagram.com/p/${photo.instagramId}/` : null)
-              || siteData.links.instagram;
 
             return (
-              <a key={photo.id} href={postUrl} target="_blank" rel="noopener noreferrer"
-                className={`${ITEM_WIDTH} aspect-square overflow-hidden rounded group relative block bg-navy-light`}>
+              <div key={photo.id}
+                className={`${ITEM_WIDTH} aspect-square overflow-hidden rounded group relative block bg-navy-light cursor-pointer`}
+                onClick={() => openPhoto(photo)}>
                 {src ? (
                   <img src={src} alt={photo.alt || "Standard Fare"}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
@@ -314,9 +374,9 @@ const GalleryPreview = () => {
                   </div>
                 )}
                 <div className="absolute inset-0 bg-navy bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center">
-                  <Instagram size={18} className="text-cream opacity-0 group-hover:opacity-80 transition-opacity" />
+                  <span className="font-body text-cream text-xs opacity-0 group-hover:opacity-100 transition-opacity">View Details</span>
                 </div>
-              </a>
+              </div>
             );
           })}
         </ScrollRow>
@@ -398,7 +458,19 @@ const PrintsPreview = () => {
 // ── Press Preview ─────────────────────────────────────────────────────────
 const PressPreview = () => {
   const { siteData } = useSite();
+  const [selected, setSelected] = useState(null);
   const topPress = siteData.press.slice(0, 6);
+
+  const openPress = (p) => {
+    setSelected({
+      ...p,
+      type: "press",
+      name: p.headline,
+      imageUrl: p.logo ? null : null,
+      externalUrl: p.url,
+      externalLabel: `Read on ${p.outlet}`,
+    });
+  };
 
   return (
     <section className="section-padding bg-cream">
@@ -409,11 +481,17 @@ const PressPreview = () => {
           <span className="section-divider" />
         </div>
 
+        <ProfileCardModal
+          item={selected}
+          onClose={() => setSelected(null)}
+        />
+
         <ScrollRow>
           {topPress.map((p) => (
-            <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer"
+            <div key={p.id}
               className={`${ITEM_WIDTH} min-w-[220px] group block bg-cream-warm border border-navy border-opacity-10
-                rounded-lg overflow-hidden hover:border-flamingo hover:shadow-md transition-all duration-300`}>
+                rounded-lg overflow-hidden hover:border-flamingo hover:shadow-md transition-all duration-300 cursor-pointer`}
+              onClick={() => openPress(p)}>
               {p.logo && (
                 <div className="bg-white flex items-center justify-center p-4 border-b border-navy border-opacity-10">
                   <img src={p.logo} alt={`${p.outlet} logo`} className="w-8 h-8 object-contain" />
@@ -425,7 +503,7 @@ const PressPreview = () => {
                   {p.headline}
                 </p>
               </div>
-            </a>
+            </div>
           ))}
         </ScrollRow>
 
