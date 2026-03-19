@@ -61,12 +61,19 @@ const ContactPage = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, toEmail }),
       });
-      if (!res.ok) throw new Error("Send failed");
-      setSubmitted(true);
+      const data = await res.json();
+      if (data.success) {
+        setSubmitted(true);
+      } else {
+        // API couldn't send — open mailto as fallback
+        const mailto = `mailto:${toEmail}?subject=${encodeURIComponent(`[${form.department || "General"}] ${form.subject}`)}&body=${encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`)}`;
+        window.location.href = mailto;
+        setSubmitted(true);
+      }
     } catch {
-      // Fallback to mailto if API fails
-      const mailto = `mailto:${toEmail}?subject=${encodeURIComponent(form.subject)}&body=${encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\nDepartment: ${form.department}\n\n${form.message}`)}`;
-      window.open(mailto, "_blank");
+      // Network error — open mailto as fallback
+      const mailto = `mailto:${toEmail}?subject=${encodeURIComponent(`[${form.department || "General"}] ${form.subject}`)}&body=${encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`)}`;
+      window.location.href = mailto;
       setSubmitted(true);
     } finally {
       setSending(false);
