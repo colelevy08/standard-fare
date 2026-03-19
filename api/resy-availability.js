@@ -7,8 +7,7 @@
 // CACHING: 5-minute CDN cache to avoid hammering Resy.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const RESY_VENUE_SLUG = "standard-fare";
-const RESY_CITY = "saratoga-springs-ny";
+const RESY_VENUE_ID = 87064; // Standard Fare Saratoga Springs — stable Resy venue ID
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -20,42 +19,8 @@ export default async function handler(req, res) {
   const partySize = req.query.party || 2;
 
   try {
-    // Resy's public API endpoint for venue availability
-    const url = `https://api.resy.com/4/find?lat=43.0806&long=-73.7849&day=${date}&party_size=${partySize}&venue_id=`;
-
-    // Try to get venue info first from Resy's search
-    const searchUrl = `https://api.resy.com/3/venuesearch/search?query=${encodeURIComponent("Standard Fare Saratoga")}&geo=%7B%22latitude%22%3A43.0806%2C%22longitude%22%3A-73.7849%7D`;
-
-    const searchRes = await fetch(searchUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        Authorization: `ResyAPI api_key="${process.env.RESY_API_KEY || "VbWk7s3L4KiK5fzlO7JD3Q5EYolJI7n5"}"`,
-      },
-    });
-
-    if (!searchRes.ok) {
-      return res.status(200).json({
-        available: true,
-        message: "Tables available — reserve on Resy",
-        slots: [],
-        source: "fallback",
-      });
-    }
-
-    const searchData = await searchRes.json();
-    const venue = searchData?.search?.hits?.[0];
-
-    if (!venue) {
-      return res.status(200).json({
-        available: true,
-        message: "Check Resy for availability",
-        slots: [],
-        source: "fallback",
-      });
-    }
-
-    // Get availability for the venue
-    const availUrl = `https://api.resy.com/4/find?lat=43.0806&long=-73.7849&day=${date}&party_size=${partySize}&venue_id=${venue.id?.resy}`;
+    // Direct availability lookup with known venue ID
+    const availUrl = `https://api.resy.com/4/find?lat=43.0806&long=-73.7849&day=${date}&party_size=${partySize}&venue_id=${RESY_VENUE_ID}`;
 
     const availRes = await fetch(availUrl, {
       headers: {
