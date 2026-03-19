@@ -39,23 +39,38 @@ const ContactPage = () => {
 
   const [form, setForm] = useState({ name: "", email: "", department: "", subject: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
   const [emailModal, setEmailModal] = useState(null);
   const [copied, setCopied] = useState(false);
 
-  const copyEmail = (email) => {
-    navigator.clipboard.writeText(email);
+  const copyEmail = (em) => {
+    navigator.clipboard.writeText(em);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: swap back to department-based routing after testing
-    const toEmail = "colelevy08@gmail.com";
-    const mailto = `mailto:${toEmail}?subject=${encodeURIComponent(form.subject)}&body=${encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\nDepartment: ${form.department}\n\n${form.message}`)}`;
-    window.open(mailto, "_blank");
-    setSubmitted(true);
+    setSending(true);
+    const toEmail = departments.find(d => d.label === form.department)?.email || departments[0]?.email || "";
+
+    try {
+      const res = await fetch("/api/contact-form", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, toEmail }),
+      });
+      if (!res.ok) throw new Error("Send failed");
+      setSubmitted(true);
+    } catch {
+      // Fallback to mailto if API fails
+      const mailto = `mailto:${toEmail}?subject=${encodeURIComponent(form.subject)}&body=${encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\nDepartment: ${form.department}\n\n${form.message}`)}`;
+      window.open(mailto, "_blank");
+      setSubmitted(true);
+    } finally {
+      setSending(false);
+    }
   };
 
   const mapsUrl = location.googleMapsUrl || "https://www.google.com/maps/place/Standard+Fare/@43.0805865,-73.7848695,17z";
@@ -182,8 +197,9 @@ const ContactPage = () => {
                       onChange={handleChange} className="form-input resize-none"
                       placeholder="How can we help you?" />
                   </div>
-                  <button type="submit" className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2">
-                    <Send size={14} />Send Message
+                  <button type="submit" disabled={sending}
+                    className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 disabled:opacity-50">
+                    <Send size={14} />{sending ? "Sending..." : "Send Message"}
                   </button>
                 </form>
               )}
