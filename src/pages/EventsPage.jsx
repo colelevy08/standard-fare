@@ -99,7 +99,7 @@ const EventCard = ({ event }) => {
             <p className="font-mono text-xs text-flamingo tracking-editorial uppercase">
               Ticket Price
             </p>
-            <p className="font-display text-navy text-2xl">${event.price} <span className="text-sm font-body opacity-50">per person</span></p>
+            <p className="font-display text-navy text-2xl">{event.price} <span className="text-sm font-body opacity-50">per person</span></p>
           </div>
 
           <AddToCartButton
@@ -169,7 +169,7 @@ const PastEventModal = ({ event, onClose }) => {
             </p>
           )}
           {event.price > 0 && (
-            <p className="font-mono text-flamingo text-sm">${event.price} per person</p>
+            <p className="font-mono text-flamingo text-sm">{event.price} per person</p>
           )}
         </div>
       </div>

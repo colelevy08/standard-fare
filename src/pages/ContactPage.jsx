@@ -9,7 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState } from "react";
-import { MapPin, Calendar, Send, ExternalLink, Mail } from "lucide-react";
+import { MapPin, Calendar, Send, ExternalLink, Mail, X, Copy, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import PageLayout from "../components/layout/PageLayout";
 import { useSite } from "../context/AdminContext";
@@ -39,6 +39,14 @@ const ContactPage = () => {
 
   const [form, setForm] = useState({ name: "", email: "", department: "", subject: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [emailModal, setEmailModal] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  const copyEmail = (email) => {
+    navigator.clipboard.writeText(email);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = (e) => {
@@ -67,16 +75,38 @@ const ContactPage = () => {
       {/* ── Contact Emails ─────────────────────────────────── */}
       <div className="bg-cream pt-10 pb-0">
         <div className="section-container">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-            {contactEntries.map((entry) => (
-              <div key={entry.label}
-                className="bg-white rounded-lg border border-navy border-opacity-10 hover:border-flamingo transition-colors p-4 text-center">
-                <p className="font-mono text-flamingo text-[10px] tracking-editorial uppercase mb-2">{entry.label}</p>
-                <a href={`mailto:${entry.email}`}
-                  className="font-body text-navy text-xs hover:text-flamingo transition-colors select-all cursor-pointer break-all">
-                  {entry.email}
-                </a>
+          {/* Email Modal */}
+          {emailModal && (
+            <div className="fixed inset-0 z-[100] bg-black bg-opacity-80 flex items-center justify-center p-4"
+              onClick={() => { setEmailModal(null); setCopied(false); }}>
+              <div className="bg-cream rounded-xl p-8 max-w-sm w-full text-center shadow-2xl"
+                onClick={(e) => e.stopPropagation()}>
+                <button onClick={() => { setEmailModal(null); setCopied(false); }}
+                  className="absolute top-4 right-4 text-navy opacity-30 hover:opacity-70">
+                  <X size={18} />
+                </button>
+                <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">{emailModal.label}</p>
+                <p className="font-body text-navy text-lg mb-5 select-all">{emailModal.email}</p>
+                <div className="flex gap-3 justify-center">
+                  <button onClick={() => copyEmail(emailModal.email)}
+                    className="btn-secondary flex items-center gap-2 text-sm">
+                    {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
+                  </button>
+                  <a href={`mailto:${emailModal.email}`} className="btn-primary text-sm">
+                    Send Email
+                  </a>
+                </div>
               </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap justify-center gap-3 mb-6">
+            {contactEntries.map((entry) => (
+              <button key={entry.label} onClick={() => setEmailModal(entry)}
+                className="bg-navy text-cream font-mono text-xs tracking-editorial uppercase
+                  px-6 py-3 rounded-full hover:bg-flamingo transition-colors">
+                {entry.label}
+              </button>
             ))}
           </div>
 

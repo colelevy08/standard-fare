@@ -43,7 +43,7 @@ const BottleModal = ({ bottle, onClose }) => {
           </div>
           <div>
             <p className="font-display text-navy text-3xl mb-4">
-              {bottle.available ? `$${Number(bottle.price).toLocaleString()}` : "Sold Out"}
+              {bottle.available ? `${Number(bottle.price).toLocaleString()}` : "Sold Out"}
             </p>
             {bottle.available ? (
               <AddToCartButton
@@ -109,7 +109,7 @@ const BottleCard = ({ bottle, onClick, isPopular }) => (
     )}
     <div className="flex items-center justify-between mt-1.5">
       <p className="font-mono text-navy text-sm font-bold">
-        {bottle.available ? `$${Number(bottle.price).toLocaleString()}` : "Sold Out"}
+        {bottle.available ? `${Number(bottle.price).toLocaleString()}` : "Sold Out"}
       </p>
       {bottle.available && (
         <AddToCartButton

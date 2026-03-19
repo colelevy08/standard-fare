@@ -69,7 +69,7 @@ const PrintModal = ({ print, onClose, orderBaseUrl }) => {
 
           <div>
             <p className="font-display text-navy text-3xl mb-4">
-              {print.available ? (print.price ? `$${Number(print.price).toLocaleString()}` : "Contact for Price") : "Sold Out"}
+              {print.available ? (print.price ? `${Number(print.price).toLocaleString()}` : "Contact for Price") : "Sold Out"}
             </p>
 
             {print.available ? (
@@ -142,7 +142,7 @@ const PrintCard = ({ print, onClick }) => (
     <h3 className="font-display text-navy text-base leading-tight">{print.title}</h3>
     <p className="font-body text-sm text-navy opacity-50 mt-1">{print.medium}</p>
     <p className="font-mono text-navy text-sm mt-1 font-bold">
-      {print.available ? (print.price ? `$${Number(print.price).toLocaleString()}` : "") : "Sold Out"}
+      {print.available ? (print.price ? `${Number(print.price).toLocaleString()}` : "") : "Sold Out"}
     </p>
   </div>
 );
@@ -181,7 +181,7 @@ const ExternalProductCard = ({ product, onClick }) => (
       {product.categories?.join(", ") || "Original Work"}
     </p>
     <p className="font-mono text-cream text-sm mt-1 font-bold">
-      {product.available ? (product.price ? `$${Number(product.price).toLocaleString()}` : "") : "Sold Out"}
+      {product.available ? (product.price ? `${Number(product.price).toLocaleString()}` : "") : "Sold Out"}
     </p>
   </div>
 );

@@ -126,7 +126,7 @@ const WeeklyFeatures = () => {
               )}
               <h3 className="font-display text-navy text-lg mb-2 group-hover:text-flamingo transition-colors">{item.name}</h3>
               <p className="font-body text-navy opacity-60 text-sm leading-relaxed flex-1 line-clamp-2">{item.description}</p>
-              <p className="font-display text-flamingo text-lg mt-4">${item.price}</p>
+              <p className="font-display text-flamingo text-lg mt-4">{item.price}</p>
             </div>
           ))}
         </div>
@@ -233,7 +233,7 @@ const EventsPreview = () => {
                         <span className="font-body text-cream opacity-40 text-xs italic">Event has ended</span>
                       ) : (
                         <>
-                          <span className="font-display text-cream text-sm">${ev.price}</span>
+                          <span className="font-display text-cream text-sm">{ev.price}</span>
                           {ev.ticketUrl && (
                             <span className="flex items-center gap-1 text-flamingo text-xs font-body">
                               <Ticket size={12} /> Tickets
@@ -300,7 +300,7 @@ const BottlePreview = () => {
               <h3 className="font-display text-navy text-sm leading-tight">{b.name}</h3>
               <p className="font-body text-xs text-navy opacity-50 mt-0.5">{b.varietal}</p>
               <div className="flex items-center justify-between mt-1">
-                <span className="font-mono text-navy text-sm font-bold">${Number(b.price).toLocaleString()}</span>
+                <span className="font-mono text-navy text-sm font-bold">{Number(b.price).toLocaleString()}</span>
                 <AddToCartButton
                   compact
                   item={{ id: b.id, type: "bottle", name: b.name, price: b.price, imageUrl: b.imageUrl, toastProductId: b.toastProductId }}
@@ -430,7 +430,7 @@ const PrintsPreview = () => {
               <h3 className="font-display text-navy text-sm leading-tight">{p.title}</h3>
               <div className="flex items-center justify-between mt-1">
                 <span className="font-mono text-flamingo text-sm">
-                  {p.available ? `$${p.price.toLocaleString()}` : "Sold"}
+                  {p.available ? `${p.price.toLocaleString()}` : "Sold"}
                 </span>
                 {p.available && (
                   <AddToCartButton

@@ -57,7 +57,7 @@ const renderItem = (item) => {
         ${item.description ? `<br><span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:12px;color:rgba(26,34,56,0.55);">${item.description}</span>` : ""}
       </td>
       <td style="padding:6px 0 6px 16px;border-bottom:1px solid rgba(26,34,56,0.08);vertical-align:top;text-align:right;white-space:nowrap;">
-        ${item.price ? `<span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:13px;color:#1A2238;">$${item.price}</span>` : ""}
+        ${item.price ? `<span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:13px;color:#1A2238;">${item.price}</span>` : ""}
       </td>
     </tr>`;
 };

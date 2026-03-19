@@ -185,7 +185,7 @@ const CheckoutPage = () => {
                             </button>
                           </div>
                           <span className="font-display text-navy text-lg">
-                            ${(item.price * item.quantity).toLocaleString()}
+                            {(item.price * item.quantity).toLocaleString()}
                           </span>
                         </div>
                       </div>
@@ -215,7 +215,7 @@ const CheckoutPage = () => {
                   <div className="border-t border-navy border-opacity-10 pt-4 mt-2">
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-body text-navy opacity-60 text-sm">Subtotal</span>
-                      <span className="font-mono text-navy text-sm">${cartTotal.toLocaleString()}</span>
+                      <span className="font-mono text-navy text-sm">{cartTotal.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="font-body text-navy opacity-60 text-sm">Tax & fees</span>
@@ -225,7 +225,7 @@ const CheckoutPage = () => {
 
                   <div className="flex items-center justify-between pt-2 border-t border-navy border-opacity-10">
                     <span className="font-display text-navy text-lg">Total</span>
-                    <span className="font-display text-navy text-2xl">${cartTotal.toLocaleString()}</span>
+                    <span className="font-display text-navy text-2xl">{cartTotal.toLocaleString()}</span>
                   </div>
 
                   {orderResult && !orderResult.success && (

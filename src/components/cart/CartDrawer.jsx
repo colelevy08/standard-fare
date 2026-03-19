@@ -84,7 +84,7 @@ const CartDrawer = () => {
                         <p className="font-body text-xs text-navy opacity-50">{item.variant}</p>
                       )}
                       <p className="font-mono text-navy text-sm font-bold mt-1">
-                        ${Number(item.price).toLocaleString()}
+                        {Number(item.price).toLocaleString()}
                       </p>
 
                       {/* Quantity controls */}
@@ -132,7 +132,7 @@ const CartDrawer = () => {
           <div className="px-6 py-5 border-t border-navy border-opacity-10 bg-cream-warm">
             <div className="flex items-center justify-between mb-4">
               <span className="font-body text-navy text-sm">Subtotal</span>
-              <span className="font-display text-navy text-xl">${cartTotal.toLocaleString()}</span>
+              <span className="font-display text-navy text-xl">{cartTotal.toLocaleString()}</span>
             </div>
             <Link to="/checkout" onClick={() => setDrawerOpen(false)}
               className="btn-primary flex items-center justify-center gap-2 w-full text-center">

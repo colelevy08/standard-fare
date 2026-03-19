@@ -63,7 +63,7 @@ const MerchModal = ({ item, onClose }) => {
           </div>
           <div>
             <p className="font-display text-navy text-3xl mb-4">
-              {item.available ? `$${Number(item.price).toLocaleString()}` : "Sold Out"}
+              {item.available ? `${Number(item.price).toLocaleString()}` : "Sold Out"}
             </p>
             {item.available ? (
               <AddToCartButton
@@ -122,7 +122,7 @@ const MerchCard = ({ item, onClick }) => (
       <p className="font-body text-sm text-navy opacity-50 mt-0.5">{item.category}</p>
     )}
     <p className="font-mono text-navy text-sm mt-1 font-bold">
-      {item.available ? `$${Number(item.price).toLocaleString()}` : "Sold Out"}
+      {item.available ? `${Number(item.price).toLocaleString()}` : "Sold Out"}
     </p>
   </div>
 );

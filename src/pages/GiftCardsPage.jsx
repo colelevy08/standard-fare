@@ -75,7 +75,7 @@ const GiftCardsPage = () => {
             {result.message}
           </p>
           <p className="font-body text-cream opacity-40 text-xs max-w-sm mx-auto mb-8">
-            A ${selectedAmount} gift card has been sent to {form.recipientEmail}.
+            A {selectedAmount} gift card has been sent to {form.recipientEmail}.
             They'll receive an email with their card details shortly.
           </p>
           <div className="flex gap-4 justify-center">
@@ -115,7 +115,7 @@ const GiftCardsPage = () => {
                         ? "bg-navy text-cream shadow-lg scale-105"
                         : "bg-white text-navy border border-navy border-opacity-10 hover:border-flamingo"
                       }`}>
-                    ${val}
+                    {val}
                   </button>
                 ))}
               </div>
@@ -129,7 +129,7 @@ const GiftCardsPage = () => {
               </button>
               {isCustom && (
                 <div className="mt-3 relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-display text-navy text-lg">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-display text-navy text-lg"></span>
                   <input type="number" min="5" max="500" step="1"
                     value={customAmount}
                     onChange={(e) => setCustomAmount(e.target.value)}
@@ -188,7 +188,7 @@ const GiftCardsPage = () => {
                 <div>
                   <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-1">eGift Card</p>
                   <p className="font-display text-cream text-2xl">
-                    {selectedAmount > 0 ? `$${selectedAmount}` : "Select an amount"}
+                    {selectedAmount > 0 ? `${selectedAmount}` : "Select an amount"}
                   </p>
                 </div>
                 <Gift size={32} className="text-flamingo opacity-40" />
@@ -209,7 +209,7 @@ const GiftCardsPage = () => {
                 disabled={submitting || !selectedAmount || selectedAmount < 5}
                 className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-40">
                 <Send size={14} />
-                {submitting ? "Processing..." : `Purchase $${selectedAmount || 0} Gift Card`}
+                {submitting ? "Processing..." : `Purchase ${selectedAmount || 0} Gift Card`}
               </button>
 
               <p className="font-body text-cream opacity-30 text-xs text-center mt-3">

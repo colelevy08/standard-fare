@@ -50,7 +50,7 @@ const MenuItem = ({ item }) => (
     </div>
     {item.price && (
       <span className="font-body text-navy text-sm font-medium flex-shrink-0 mt-0.5">
-        ${item.price}
+        {item.price}
       </span>
     )}
   </div>
