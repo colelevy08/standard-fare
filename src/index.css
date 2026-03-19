@@ -39,3 +39,15 @@
 
 /* Ensure tap targets are at least 44px tall on iOS (Apple HIG recommendation) */
 .touch-manipulation { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+/* Ticker scroll for overflowing single-line text */
+@keyframes ticker {
+  0%, 20%   { transform: translateX(0); }
+  45%, 75%  { transform: var(--ticker-shift, translateX(-30px)); }
+  100%      { transform: translateX(0); }
+}
+.ticker-scroll {
+  animation-name: ticker;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}

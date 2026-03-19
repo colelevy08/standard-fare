@@ -124,6 +124,7 @@ const BottleCard = ({ bottle, onClick, isPopular }) => (
 // ── Main Bottle Shop Page ─────────────────────────────────────────────────
 const BottleShopPage = () => {
   const { siteData } = useSite();
+  const showBottleShop = siteData.settings?.showBottleShop !== false;
   const allBottles = (siteData.bottles || []).filter((b) => !b.draft);
   const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState("All");
@@ -134,6 +135,19 @@ const BottleShopPage = () => {
   const filtered = filter === "All"
     ? allBottles
     : allBottles.filter((b) => b.category === filter.toLowerCase());
+
+  if (!showBottleShop) {
+    return (
+      <PageLayout>
+        <div className="bg-navy pt-32 pb-24 text-center">
+          <h1 className="font-display text-cream text-4xl mb-4">Bottle Shop</h1>
+          <p className="font-body text-cream opacity-50 text-sm">
+            This section is currently unavailable. Please check back soon.
+          </p>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>

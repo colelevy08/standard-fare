@@ -15,7 +15,7 @@
 //  11. Reserve CTA
 // ─────────────────────────────────────────────────────────────────────────────
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Ticket, ShoppingBag, ExternalLink, Instagram,
@@ -65,6 +65,41 @@ const ScrollRow = ({ children, className = "" }) => {
           hover:bg-opacity-80 -mr-2 touch-manipulation hidden sm:flex">
         <ChevronRight size={20} />
       </button>
+    </div>
+  );
+};
+
+// ── Ticker Text ───────────────────────────────────────────────────────────
+// Single-line text that slowly scrolls horizontally when content overflows.
+const TickerText = ({ children, className = "" }) => {
+  const outerRef = useRef(null);
+  const innerRef = useRef(null);
+  const [overflow, setOverflow] = useState(0);
+
+  useEffect(() => {
+    const check = () => {
+      if (outerRef.current && innerRef.current) {
+        const diff = innerRef.current.scrollWidth - outerRef.current.clientWidth;
+        setOverflow(diff > 2 ? diff : 0);
+      }
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [children]);
+
+  return (
+    <div ref={outerRef} className={`overflow-hidden whitespace-nowrap ${className}`}>
+      <span
+        ref={innerRef}
+        className={overflow > 0 ? "inline-block ticker-scroll" : "inline-block"}
+        style={overflow > 0 ? {
+          animationDuration: `${Math.max(4, overflow * 0.08)}s`,
+          "--ticker-shift": `translateX(-${overflow + 8}px)`,
+        } : undefined}
+      >
+        {children}
+      </span>
     </div>
   );
 };
@@ -297,7 +332,7 @@ const BottlePreview = () => {
                   <span className="font-body text-cream text-xs opacity-0 group-hover:opacity-100 transition-opacity">View Details</span>
                 </div>
               </div>
-              <h3 className="font-display text-navy text-sm leading-tight">{b.name}</h3>
+              <TickerText className="font-display text-navy text-sm leading-tight">{b.name}</TickerText>
               <p className="font-body text-xs text-navy opacity-50 mt-0.5">{b.varietal}</p>
               <div className="flex items-center justify-between mt-1">
                 <span className="font-mono text-navy text-sm font-bold">{Number(b.price).toLocaleString()}</span>
