@@ -102,14 +102,11 @@ const ContactPage = () => {
                 </button>
                 <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">{emailModal.label}</p>
                 <p className="font-body text-navy text-lg mb-5 select-all">{emailModal.email}</p>
-                <div className="flex gap-3 justify-center">
+                <div className="flex justify-center">
                   <button onClick={() => copyEmail(emailModal.email)}
-                    className="btn-secondary flex items-center gap-2 text-sm">
-                    {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy</>}
+                    className="btn-primary flex items-center gap-2 text-sm">
+                    {copied ? <><Check size={14} /> Copied</> : <><Copy size={14} /> Copy Email</>}
                   </button>
-                  <a href={`mailto:${emailModal.email}`} className="btn-primary text-sm">
-                    Send Email
-                  </a>
                 </div>
               </div>
             </div>
