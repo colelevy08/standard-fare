@@ -67,14 +67,16 @@ const ContactPage = () => {
       {/* ── Contact Emails ─────────────────────────────────── */}
       <div className="bg-cream pt-10 pb-0">
         <div className="section-container">
-          <div className="flex flex-wrap justify-center gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
             {contactEntries.map((entry) => (
-              <a key={entry.label} href={`mailto:${entry.email}`}
-                className="inline-flex items-center gap-2 bg-navy text-cream font-mono text-xs tracking-editorial uppercase
-                  px-6 py-3 rounded-full hover:bg-flamingo transition-colors">
-                <Mail size={13} />
-                {entry.label}
-              </a>
+              <div key={entry.label}
+                className="bg-white rounded-lg border border-navy border-opacity-10 hover:border-flamingo transition-colors p-4 text-center">
+                <p className="font-mono text-flamingo text-[10px] tracking-editorial uppercase mb-2">{entry.label}</p>
+                <a href={`mailto:${entry.email}`}
+                  className="font-body text-navy text-xs hover:text-flamingo transition-colors select-all cursor-pointer break-all">
+                  {entry.email}
+                </a>
+              </div>
             ))}
           </div>
 
