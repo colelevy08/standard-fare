@@ -12,22 +12,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState } from "react";
-import { X, ExternalLink, Palette } from "lucide-react";
+import { X, Palette } from "lucide-react";
 import PageLayout from "../components/layout/PageLayout";
 import { useSite } from "../context/AdminContext";
-import useBigCartel from "../hooks/useBigCartel";
 import AddToCartButton from "../components/cart/AddToCartButton";
 
 // ── Print Detail Modal — shown when a print is clicked ────────────────────
-const PrintModal = ({ print, onClose, orderBaseUrl }) => {
+const PrintModal = ({ print, onClose }) => {
   if (!print) return null;
-
-  // All purchases through Standard Fare / Toast
-  const purchaseUrl = print.toastProductId
-    ? `${orderBaseUrl}#product-${print.toastProductId}`
-    : orderBaseUrl;
-
-  const isExternal = false;
 
   return (
     <div
@@ -73,24 +65,17 @@ const PrintModal = ({ print, onClose, orderBaseUrl }) => {
             </p>
 
             {print.available ? (
-              isExternal ? (
-                <a href={purchaseUrl} target="_blank" rel="noopener noreferrer"
-                  className="btn-primary flex items-center justify-center gap-2 w-full">
-                  <ExternalLink size={16} /> View on Artist's Shop
-                </a>
-              ) : (
-                <AddToCartButton
-                  item={{
-                    id: print.id,
-                    type: "print",
-                    name: print.title,
-                    price: print.price,
-                    imageUrl: print.imageUrl,
-                    toastProductId: print.toastProductId,
-                    stock: print.stock != null ? print.stock : 1,
-                  }}
-                />
-              )
+              <AddToCartButton
+                item={{
+                  id: print.id,
+                  type: "print",
+                  name: print.title,
+                  price: print.price,
+                  imageUrl: print.imageUrl,
+                  toastProductId: print.toastProductId,
+                  stock: print.stock != null ? print.stock : 1,
+                }}
+              />
             ) : (
               <button
                 disabled
@@ -147,53 +132,11 @@ const PrintCard = ({ print, onClick }) => (
   </div>
 );
 
-// ── External Product Card (for Big Cartel items) ──────────────────────────
-const ExternalProductCard = ({ product, onClick }) => (
-  <div className="group cursor-pointer" onClick={() => onClick(product)}>
-    <div className="relative overflow-hidden rounded shadow-md mb-3 aspect-square bg-navy-light">
-      {product.imageUrl ? (
-        <img
-          src={product.imageUrl}
-          alt={product.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <Palette size={32} className="text-cream opacity-20" />
-        </div>
-      )}
-      {!product.available && (
-        <div className="absolute inset-0 bg-navy bg-opacity-60 flex items-center justify-center">
-          <span className="font-mono text-cream text-xs tracking-editorial uppercase">Sold Out</span>
-        </div>
-      )}
-      {product.available && (
-        <div className="absolute inset-0 bg-navy bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center">
-          <span className="font-body text-cream text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-            View Details
-          </span>
-        </div>
-      )}
-    </div>
-    <h3 className="font-display text-cream text-base leading-tight">{product.title}</h3>
-    <p className="font-body text-sm text-cream opacity-40 mt-1">
-      {product.categories?.join(", ") || "Original Work"}
-    </p>
-    <p className="font-mono text-cream text-sm mt-1 font-bold">
-      {product.available ? (product.price ? `${Number(product.price).toLocaleString()}` : "") : "Sold Out"}
-    </p>
-  </div>
-);
-
 // ── Main Prints Page ──────────────────────────────────────────────────────
 const PrintsPage = () => {
   const { siteData } = useSite();
   const [selectedPrint, setSelectedPrint] = useState(null);
-  const { products: bigCartelProducts, loading: bcLoading } = useBigCartel();
   const showPaintings = siteData.settings?.showPaintings !== false;
-
-  const orderBaseUrl = siteData.links.toastOnlineOrder;
 
   // If paintings are hidden, show a simple message
   if (!showPaintings) {
@@ -209,28 +152,11 @@ const PrintsPage = () => {
     );
   }
 
-  // Filter Big Cartel products to exclude ones already in the Standard Fare section
-  const sfTitles = new Set(siteData.prints.map((p) => p.title.toLowerCase()));
-  const otherProducts = bigCartelProducts.filter(
-    (p) => !sfTitles.has(p.title.toLowerCase())
-  );
-
-  // When clicking a Big Cartel product, format it for the modal
-  const handleExternalClick = (product) => {
-    setSelectedPrint({
-      ...product,
-      artist: "Daniel Fairley",
-      medium: product.categories?.join(", ") || "Original Work",
-      bigCartelUrl: product.url,
-    });
-  };
-
   return (
     <PageLayout>
       <PrintModal
         print={selectedPrint}
         onClose={() => setSelectedPrint(null)}
-        orderBaseUrl={orderBaseUrl}
       />
 
       {/* ── Page Header ─────────────────────────────────────── */}

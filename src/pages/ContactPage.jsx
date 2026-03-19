@@ -9,7 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState } from "react";
-import { MapPin, Calendar, Send, ExternalLink, Mail, X, Copy, Check } from "lucide-react";
+import { MapPin, Calendar, Send, ExternalLink, X, Copy, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import PageLayout from "../components/layout/PageLayout";
 import { useSite } from "../context/AdminContext";
