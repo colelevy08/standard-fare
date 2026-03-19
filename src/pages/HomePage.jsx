@@ -97,13 +97,13 @@ const WeeklyFeatures = () => {
   if (!wf.enabled || !wf.items || wf.items.length === 0) return null;
 
   return (
-    <section className="section-padding bg-navy">
+    <section className="section-padding bg-cream">
       <div className="section-container">
         <div className="text-center mb-10">
           <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">
             {wf.subtitle || "Chef's selections for the week"}
           </p>
-          <h2 className="font-display text-cream text-3xl md:text-4xl">
+          <h2 className="font-display text-navy text-3xl md:text-4xl">
             {wf.headline || "This Week's Features"}
           </h2>
           <span className="section-divider" />
@@ -117,22 +117,22 @@ const WeeklyFeatures = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {wf.items.map((item) => (
             <div key={item.id}
-              className="bg-navy-light rounded-lg p-6 flex flex-col cursor-pointer group hover:bg-opacity-80 transition-all"
+              className="bg-white shadow-sm rounded-lg p-6 flex flex-col cursor-pointer group hover:bg-opacity-80 transition-all"
               onClick={() => setSelected(item)}>
               {item.tag && (
                 <span className={`inline-block self-start font-mono text-[10px] tracking-editorial uppercase px-3 py-1 rounded-full mb-3 ${TAG_COLORS[item.tag] || "bg-flamingo text-white"}`}>
                   {item.tag}
                 </span>
               )}
-              <h3 className="font-display text-cream text-lg mb-2 group-hover:text-flamingo transition-colors">{item.name}</h3>
-              <p className="font-body text-cream opacity-60 text-sm leading-relaxed flex-1 line-clamp-2">{item.description}</p>
+              <h3 className="font-display text-navy text-lg mb-2 group-hover:text-flamingo transition-colors">{item.name}</h3>
+              <p className="font-body text-navy opacity-60 text-sm leading-relaxed flex-1 line-clamp-2">{item.description}</p>
               <p className="font-display text-flamingo text-lg mt-4">${item.price}</p>
             </div>
           ))}
         </div>
 
         <div className="text-center mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Link to="/menu" className="btn-ghost">View Full Menu</Link>
+          <Link to="/menu" className="btn-secondary">View Full Menu</Link>
           <Link to="/order" className="btn-primary">Order Now</Link>
         </div>
       </div>
@@ -178,13 +178,13 @@ const EventsPreview = () => {
   };
 
   return (
-    <section className="section-padding bg-cream">
+    <section className="section-padding bg-navy">
       <div className="section-container">
         <div className="text-center mb-10">
           <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">
             {isMixed ? "Dine & Celebrate" : allPast ? "Recent Events" : "Coming Up"}
           </p>
-          <h2 className="font-display text-navy text-3xl md:text-4xl">
+          <h2 className="font-display text-cream text-3xl md:text-4xl">
             {isMixed ? "Special Events" : allPast ? "Past Events" : "Upcoming Events"}
           </h2>
           <span className="section-divider" />
@@ -202,7 +202,7 @@ const EventsPreview = () => {
             return (
               <div key={ev.id} className={`${ITEM_WIDTH} min-w-[220px] cursor-pointer`}
                 onClick={() => openEvent(ev)}>
-                <div className={`bg-white rounded-lg overflow-hidden group h-full flex flex-col shadow-sm
+                <div className={`bg-navy-light rounded-lg overflow-hidden group h-full flex flex-col
                   ${isPast ? "opacity-70" : ""}`}>
                   <div className="relative">
                     <img src={photo} alt={ev.title}
@@ -227,13 +227,13 @@ const EventsPreview = () => {
                     <p className="font-mono text-flamingo text-[10px] tracking-editorial uppercase mb-1">
                       {formatDate(ev.date)} · {ev.time}
                     </p>
-                    <h3 className="font-display text-navy text-sm mb-2 line-clamp-2 group-hover:text-flamingo transition-colors">{ev.title}</h3>
+                    <h3 className="font-display text-cream text-sm mb-2 line-clamp-2 group-hover:text-flamingo transition-colors">{ev.title}</h3>
                     <div className="mt-auto flex items-center justify-between pt-2">
                       {isPast ? (
-                        <span className="font-body text-navy opacity-40 text-xs italic">Event has ended</span>
+                        <span className="font-body text-cream opacity-40 text-xs italic">Event has ended</span>
                       ) : (
                         <>
-                          <span className="font-display text-navy text-sm">${ev.price}</span>
+                          <span className="font-display text-cream text-sm">${ev.price}</span>
                           {ev.ticketUrl && (
                             <span className="flex items-center gap-1 text-flamingo text-xs font-body">
                               <Ticket size={12} /> Tickets
@@ -250,7 +250,7 @@ const EventsPreview = () => {
         </ScrollRow>
 
         <div className="text-center mt-8">
-          <Link to="/events" className="btn-secondary">View All Events</Link>
+          <Link to="/events" className="btn-ghost">View All Events</Link>
         </div>
       </div>
     </section>
@@ -267,11 +267,11 @@ const BottlePreview = () => {
   if (!showBottleShop || bottles.length === 0) return null;
 
   return (
-    <section className="section-padding bg-navy">
+    <section className="section-padding bg-cream">
       <div className="section-container">
         <div className="text-center mb-10">
           <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">Take Home a Bottle</p>
-          <h2 className="font-display text-cream text-3xl md:text-4xl">Bottle Shop</h2>
+          <h2 className="font-display text-navy text-3xl md:text-4xl">Bottle Shop</h2>
           <span className="section-divider" />
         </div>
 
@@ -297,10 +297,10 @@ const BottlePreview = () => {
                   <span className="font-body text-cream text-xs opacity-0 group-hover:opacity-100 transition-opacity">View Details</span>
                 </div>
               </div>
-              <h3 className="font-display text-cream text-sm leading-tight">{b.name}</h3>
-              <p className="font-body text-xs text-cream opacity-50 mt-0.5">{b.varietal}</p>
+              <h3 className="font-display text-navy text-sm leading-tight">{b.name}</h3>
+              <p className="font-body text-xs text-navy opacity-50 mt-0.5">{b.varietal}</p>
               <div className="flex items-center justify-between mt-1">
-                <span className="font-mono text-cream text-sm font-bold">${Number(b.price).toLocaleString()}</span>
+                <span className="font-mono text-navy text-sm font-bold">${Number(b.price).toLocaleString()}</span>
                 <AddToCartButton
                   compact
                   item={{ id: b.id, type: "bottle", name: b.name, price: b.price, imageUrl: b.imageUrl, toastProductId: b.toastProductId }}
@@ -311,7 +311,7 @@ const BottlePreview = () => {
         </ScrollRow>
 
         <div className="text-center mt-8">
-          <Link to="/bottles" className="btn-ghost">Shop All Bottles</Link>
+          <Link to="/bottles" className="btn-secondary">Shop All Bottles</Link>
         </div>
       </div>
     </section>
@@ -342,11 +342,11 @@ const GalleryPreview = () => {
   };
 
   return (
-    <section className="section-padding bg-cream">
+    <section className="section-padding bg-navy">
       <div className="section-container">
         <div className="text-center mb-10">
           <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">@standardfaresaratoga</p>
-          <h2 className="font-display text-navy text-3xl md:text-4xl">Gallery</h2>
+          <h2 className="font-display text-cream text-3xl md:text-4xl">Gallery</h2>
           <span className="section-divider" />
         </div>
 
@@ -380,9 +380,9 @@ const GalleryPreview = () => {
         </ScrollRow>
 
         <div className="text-center mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-          <Link to="/gallery" className="btn-secondary">View Full Gallery</Link>
+          <Link to="/gallery" className="btn-ghost">View Full Gallery</Link>
           <a href={siteData.links.instagram} target="_blank" rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 font-body text-sm tracking-editorial uppercase text-navy opacity-60 hover:opacity-100 hover:text-flamingo transition-all">
+            className="flex items-center justify-center gap-2 font-body text-sm tracking-editorial uppercase text-cream opacity-60 hover:opacity-100 hover:text-flamingo transition-all">
             <ExternalLink size={14} />Follow on Instagram
           </a>
         </div>
@@ -401,13 +401,13 @@ const PrintsPreview = () => {
   if (!showPaintings || prints.length === 0) return null;
 
   return (
-    <section className="section-padding bg-navy">
+    <section className="section-padding bg-cream">
       <div className="section-container">
         <div className="text-center mb-10">
           <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">In-House Gallery</p>
-          <h2 className="font-display text-cream text-3xl md:text-4xl">Paintings</h2>
+          <h2 className="font-display text-navy text-3xl md:text-4xl">Paintings</h2>
           <span className="section-divider" />
-          <p className="font-body text-cream opacity-50 text-sm max-w-sm mx-auto">
+          <p className="font-body text-navy opacity-50 text-sm max-w-sm mx-auto">
             Original works by Daniel Fairley — available exclusively here.
           </p>
         </div>
@@ -427,7 +427,7 @@ const PrintsPreview = () => {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                 )}
               </div>
-              <h3 className="font-display text-cream text-sm leading-tight">{p.title}</h3>
+              <h3 className="font-display text-navy text-sm leading-tight">{p.title}</h3>
               <div className="flex items-center justify-between mt-1">
                 <span className="font-mono text-flamingo text-sm">
                   {p.available ? `$${p.price.toLocaleString()}` : "Sold"}
@@ -444,7 +444,7 @@ const PrintsPreview = () => {
         </ScrollRow>
 
         <div className="text-center mt-8">
-          <Link to="/prints" className="btn-ghost flex items-center justify-center gap-2 mx-auto w-fit">
+          <Link to="/prints" className="btn-secondary flex items-center justify-center gap-2 mx-auto w-fit">
             <ShoppingBag size={16} /> Shop All Paintings
           </Link>
         </div>
@@ -471,11 +471,11 @@ const PressPreview = () => {
   };
 
   return (
-    <section className="section-padding bg-cream">
+    <section className="section-padding bg-navy">
       <div className="section-container">
         <div className="text-center mb-10">
           <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">As Seen In</p>
-          <h2 className="font-display text-navy text-3xl md:text-4xl">Press</h2>
+          <h2 className="font-display text-cream text-3xl md:text-4xl">Press</h2>
           <span className="section-divider" />
         </div>
 
@@ -487,17 +487,17 @@ const PressPreview = () => {
         <ScrollRow>
           {topPress.map((p) => (
             <div key={p.id}
-              className={`${ITEM_WIDTH} min-w-[220px] group block bg-cream-warm border border-navy border-opacity-10
+              className={`${ITEM_WIDTH} min-w-[220px] group block bg-navy-light border border-cream border-opacity-10
                 rounded-lg overflow-hidden hover:border-flamingo hover:shadow-md transition-all duration-300 cursor-pointer`}
               onClick={() => openPress(p)}>
               {p.logo && (
-                <div className="bg-white flex items-center justify-center p-4 border-b border-navy border-opacity-10">
+                <div className="bg-navy-light flex items-center justify-center p-4 border-b border-cream border-opacity-10">
                   <img src={p.logo} alt={`${p.outlet} logo`} className="w-8 h-8 object-contain" />
                 </div>
               )}
               <div className="p-5">
                 <p className="font-mono text-flamingo text-[10px] tracking-editorial uppercase mb-2">{p.outlet}</p>
-                <p className="font-display text-navy text-sm leading-snug group-hover:text-flamingo-dark transition-colors line-clamp-3">
+                <p className="font-display text-cream text-sm leading-snug group-hover:text-flamingo-dark transition-colors line-clamp-3">
                   {p.headline}
                 </p>
               </div>
@@ -506,7 +506,7 @@ const PressPreview = () => {
         </ScrollRow>
 
         <div className="text-center mt-8">
-          <Link to="/press" className="btn-secondary">All Press Coverage</Link>
+          <Link to="/press" className="btn-ghost">All Press Coverage</Link>
         </div>
       </div>
     </section>

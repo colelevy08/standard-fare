@@ -63,9 +63,20 @@ const ContactPage = () => {
         </p>
       </div>
 
-      {/* ── Private Events CTA ─────────────────────────────── */}
+      {/* ── Contact Emails ─────────────────────────────────── */}
       <div className="bg-cream pt-10 pb-0">
         <div className="section-container">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            {contactEntries.map((entry) => (
+              <a key={entry.label} href={`mailto:${entry.email}`}
+                className="bg-white rounded-lg p-5 border border-navy border-opacity-10 hover:border-flamingo transition-colors group text-center">
+                <p className="font-mono text-flamingo text-[10px] tracking-editorial uppercase mb-1">{entry.label}</p>
+                <p className="font-body text-navy text-sm group-hover:text-flamingo transition-colors break-all">{entry.email}</p>
+              </a>
+            ))}
+          </div>
+
+          {/* ── Private Events CTA ─────────────────────────── */}
           <Link to="/private-events"
             className="bg-navy rounded-xl p-6 flex items-center gap-4
               hover:bg-navy-light transition-colors group">

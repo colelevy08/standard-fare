@@ -8,6 +8,7 @@
 
 import React, { useState } from "react";
 import { Calendar, Clock, Users, Wine, X } from "lucide-react";
+import { Link } from "react-router-dom";
 import PageLayout from "../components/layout/PageLayout";
 import { useSite } from "../context/AdminContext";
 import AddToCartButton from "../components/cart/AddToCartButton";
@@ -236,6 +237,21 @@ const EventsPage = () => {
 
       <div className="section-padding bg-cream">
         <div className="section-container">
+
+          {/* Private Events CTA */}
+          <Link to="/private-events"
+            className="bg-navy rounded-xl p-6 flex items-center gap-4 mb-10
+              hover:bg-navy-light transition-colors group">
+            <Calendar size={20} className="text-flamingo flex-shrink-0" />
+            <div>
+              <p className="font-display text-cream text-base group-hover:text-flamingo-light transition-colors">
+                Host a Private Event
+              </p>
+              <p className="font-body text-cream opacity-40 text-xs">
+                Plan your next celebration at Standard Fare →
+              </p>
+            </div>
+          </Link>
 
           {/* Upcoming */}
           {upcoming.length === 0 ? (

@@ -13,38 +13,68 @@ const ResyAvailability = () => {
   const { siteData } = useSite();
   const [data, setData] = useState(null);
   const [partySize, setPartySize] = useState(2);
+  const [searchDate, setSearchDate] = useState(null);
 
   useEffect(() => {
     const isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
     if (isDev) {
-      // Mock data for development
       setData({
         available: true,
         message: "6 times available tonight",
         slots: [
-          { time: "2026-03-17 17:30:00", type: "Dining Room" },
-          { time: "2026-03-17 18:00:00", type: "Dining Room" },
-          { time: "2026-03-17 18:30:00", type: "Bar" },
-          { time: "2026-03-17 19:00:00", type: "Dining Room" },
-          { time: "2026-03-17 20:00:00", type: "Dining Room" },
-          { time: "2026-03-17 21:00:00", type: "Bar" },
+          { time: "2026-03-19 17:30:00", type: "Dining Room" },
+          { time: "2026-03-19 18:00:00", type: "Dining Room" },
+          { time: "2026-03-19 18:30:00", type: "Bar" },
+          { time: "2026-03-19 19:00:00", type: "Dining Room" },
+          { time: "2026-03-19 20:00:00", type: "Dining Room" },
+          { time: "2026-03-19 21:00:00", type: "Bar" },
         ],
+        date: new Date().toISOString().split("T")[0],
       });
       return;
     }
 
-    const fetchAvailability = async () => {
+    const fetchAvailability = async (dateStr) => {
       try {
-        const today = new Date().toISOString().split("T")[0];
-        const res = await fetch(`/api/resy-availability?date=${today}&party=${partySize}`);
+        const res = await fetch(`/api/resy-availability?date=${dateStr}&party=${partySize}`);
         const json = await res.json();
-        setData(json);
+        return json;
       } catch {
-        setData({ available: true, message: "Reserve on Resy", slots: [] });
+        return { available: true, message: "Reserve on Resy", slots: [], date: dateStr };
       }
     };
 
-    fetchAvailability();
+    const findAvailability = async () => {
+      const today = new Date();
+      const todayStr = today.toISOString().split("T")[0];
+
+      // Try today first
+      const todayData = await fetchAvailability(todayStr);
+      if (todayData.slots && todayData.slots.length > 0) {
+        setData({ ...todayData, date: todayStr });
+        setSearchDate(null);
+        return;
+      }
+
+      // No slots tonight — check next 7 days for the nearest availability
+      for (let i = 1; i <= 7; i++) {
+        const nextDate = new Date(today);
+        nextDate.setDate(nextDate.getDate() + i);
+        const nextStr = nextDate.toISOString().split("T")[0];
+        const nextData = await fetchAvailability(nextStr);
+        if (nextData.slots && nextData.slots.length > 0) {
+          setData({ ...nextData, date: nextStr });
+          setSearchDate(nextStr);
+          return;
+        }
+      }
+
+      // Nothing found in the next week — show fallback
+      setData({ available: false, message: "No tables available this week — check Resy for more dates", slots: [], date: todayStr });
+      setSearchDate(null);
+    };
+
+    findAvailability();
   }, [partySize]);
 
   if (!data) return null;
@@ -58,12 +88,22 @@ const ResyAvailability = () => {
     }
   };
 
+  const dateLabel = (() => {
+    if (!searchDate) return "Tonight's Availability";
+    try {
+      const d = new Date(searchDate + "T12:00:00");
+      return `Next Available: ${d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}`;
+    } catch {
+      return "Upcoming Availability";
+    }
+  })();
+
   return (
     <div className="bg-cream-warm rounded-lg p-6 border border-navy border-opacity-10">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${data.available ? "bg-green-500" : "bg-flamingo"} animate-pulse`} />
-          <h3 className="font-display text-navy text-lg">Tonight's Availability</h3>
+          <h3 className="font-display text-navy text-lg">{dateLabel}</h3>
         </div>
         <div className="flex items-center gap-2">
           <Users size={14} className="text-navy opacity-40" />

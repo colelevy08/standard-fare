@@ -22,14 +22,12 @@ import AddToCartButton from "../components/cart/AddToCartButton";
 const PrintModal = ({ print, onClose, orderBaseUrl }) => {
   if (!print) return null;
 
-  // If it has a Big Cartel URL, link there; otherwise use Toast
-  const purchaseUrl = print.bigCartelUrl
-    ? print.bigCartelUrl
-    : print.toastProductId
-      ? `${orderBaseUrl}#product-${print.toastProductId}`
-      : orderBaseUrl;
+  // All purchases through Standard Fare / Toast
+  const purchaseUrl = print.toastProductId
+    ? `${orderBaseUrl}#product-${print.toastProductId}`
+    : orderBaseUrl;
 
-  const isExternal = !!print.bigCartelUrl && !print.toastProductId;
+  const isExternal = false;
 
   return (
     <div
@@ -260,10 +258,7 @@ const PrintsPage = () => {
               on the walls at Standard Fare, where diners can view — and purchase — his work in person. Each
               painting brings a sense of humor and energy that matches the creative spirit of the restaurant.
             </p>
-            <a href="https://www.instagram.com/poemdexter/" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark transition-colors mt-4">
-              <ExternalLink size={14} /> @poemdexter on Instagram
-            </a>
+            {/* External artist links removed — purchases through Standard Fare only */}
           </div>
         </div>
       </div>
@@ -289,52 +284,7 @@ const PrintsPage = () => {
         </div>
       </div>
 
-      {/* ── More from Daniel Fairley (Big Cartel) ─────────────── */}
-      {(otherProducts.length > 0 || bcLoading) && (
-        <div className="section-padding bg-navy">
-          <div className="section-container">
-            <div className="text-center mb-12">
-              <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">
-                More from the Artist
-              </p>
-              <h2 className="font-display text-cream text-3xl md:text-4xl">
-                Daniel Fairley's Shop
-              </h2>
-              <span className="block w-16 h-px bg-flamingo mx-auto mt-6 mb-4" />
-              <p className="font-body text-cream opacity-50 text-sm max-w-md mx-auto">
-                Browse more original works available directly from the artist at{" "}
-                <a href="https://www.poemdexter.com" target="_blank" rel="noopener noreferrer"
-                  className="text-flamingo hover:text-flamingo-light transition-colors underline underline-offset-2">
-                  poemdexter.com
-                </a>
-              </p>
-            </div>
-
-            {bcLoading ? (
-              <p className="text-center font-body text-cream opacity-40 py-8">
-                Loading artwork...
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {otherProducts.map((product) => (
-                  <ExternalProductCard
-                    key={product.id}
-                    product={product}
-                    onClick={handleExternalClick}
-                  />
-                ))}
-              </div>
-            )}
-
-            <div className="text-center mt-10">
-              <a href="https://www.poemdexter.com" target="_blank" rel="noopener noreferrer"
-                className="btn-ghost flex items-center justify-center gap-2 mx-auto w-fit">
-                <ExternalLink size={16} /> Visit poemdexter.com
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Big Cartel section removed — all paintings sold exclusively through Standard Fare */}
     </PageLayout>
   );
 };
