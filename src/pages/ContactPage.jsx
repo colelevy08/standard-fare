@@ -9,7 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState } from "react";
-import { MapPin, Calendar, Send, ExternalLink } from "lucide-react";
+import { MapPin, Calendar, Send, ExternalLink, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 import PageLayout from "../components/layout/PageLayout";
 import { useSite } from "../context/AdminContext";
@@ -43,7 +43,8 @@ const ContactPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const toEmail = departments.find(d => d.label === form.department)?.email || departments[0]?.email || "";
+    // TODO: swap back to department-based routing after testing
+    const toEmail = "colelevy08@gmail.com";
     const mailto = `mailto:${toEmail}?subject=${encodeURIComponent(form.subject)}&body=${encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\nDepartment: ${form.department}\n\n${form.message}`)}`;
     window.open(mailto, "_blank");
     setSubmitted(true);
@@ -66,12 +67,13 @@ const ContactPage = () => {
       {/* ── Contact Emails ─────────────────────────────────── */}
       <div className="bg-cream pt-10 pb-0">
         <div className="section-container">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="flex flex-wrap justify-center gap-3 mb-6">
             {contactEntries.map((entry) => (
               <a key={entry.label} href={`mailto:${entry.email}`}
-                className="bg-white rounded-lg p-5 border border-navy border-opacity-10 hover:border-flamingo transition-colors group text-center">
-                <p className="font-mono text-flamingo text-[10px] tracking-editorial uppercase mb-1">{entry.label}</p>
-                <p className="font-body text-navy text-sm group-hover:text-flamingo transition-colors break-all">{entry.email}</p>
+                className="inline-flex items-center gap-2 bg-navy text-cream font-mono text-xs tracking-editorial uppercase
+                  px-6 py-3 rounded-full hover:bg-flamingo transition-colors">
+                <Mail size={13} />
+                {entry.label}
               </a>
             ))}
           </div>
