@@ -462,7 +462,7 @@ const PrintsPreview = () => {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                 )}
               </div>
-              <h3 className="font-display text-navy text-sm leading-tight">{p.title}</h3>
+              <TickerText className="font-display text-navy text-sm leading-tight">{p.title}</TickerText>
               <div className="flex items-center justify-between mt-1">
                 <span className="font-mono text-flamingo text-sm">
                   {p.available ? `${p.price.toLocaleString()}` : "Sold"}

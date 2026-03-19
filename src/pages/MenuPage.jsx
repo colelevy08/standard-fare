@@ -128,19 +128,19 @@ const MenuPage = () => {
 
       {/* Menu content */}
       <div className="section-padding bg-cream">
-        <div className="section-container max-w-3xl">
+        <div className="section-container max-w-5xl">
           {current ? (
             <>
               {/* Menu note */}
               {current.note && (
-                <p className="font-body text-navy opacity-50 text-sm mb-8 italic">
+                <p className="font-body text-navy opacity-50 text-sm mb-8 italic text-center">
                   {current.note}
                 </p>
               )}
 
               {/* GF / V key — only show on food menus */}
               {(active === "brunch" || active === "dinner" || active === "dessert") && (
-                <div className="flex items-center gap-4 mb-8">
+                <div className="flex items-center gap-4 mb-8 justify-center">
                   <div className="flex items-center gap-2">
                     <GFBadge />
                     <span className="font-body text-navy opacity-50 text-xs">Gluten free</span>
@@ -152,10 +152,18 @@ const MenuPage = () => {
                 </div>
               )}
 
-              {/* Sections */}
-              {(current.sections || []).map((section, i) => (
-                <MenuSection key={i} section={section} />
-              ))}
+              {/* Sections — 2 columns on desktop when multiple sections */}
+              {(current.sections || []).length > 1 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                  {(current.sections || []).map((section, i) => (
+                    <MenuSection key={i} section={section} />
+                  ))}
+                </div>
+              ) : (
+                (current.sections || []).map((section, i) => (
+                  <MenuSection key={i} section={section} />
+                ))
+              )}
             </>
           ) : (
             <p className="font-body text-navy opacity-40 text-center py-16">

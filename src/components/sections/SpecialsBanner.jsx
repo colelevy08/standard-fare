@@ -78,7 +78,7 @@ const SpecialsBanner = () => {
   if (dismissed || activeSpecials.length === 0) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[70] md:bottom-auto md:top-0 md:relative">
+    <div className="fixed top-16 left-0 right-0 z-[60]">
       <div className="bg-flamingo text-white px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
