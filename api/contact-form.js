@@ -24,9 +24,17 @@ export default async function handler(req, res) {
 
   const recipient = toEmail || FALLBACK_TO;
 
-  // ── Try Resend first (if configured) ────────────────────────────────────
+  // ── Try Resend (if configured) ──────────────────────────────────────────
+  // NOTE: Resend free tier with onboarding@resend.dev can only send to the
+  // account owner email. Once you verify your domain (e.g. standardfaresaratoga.com)
+  // in Resend dashboard, you can send to any address and use a custom from.
   const resendKey = process.env.RESEND_API_KEY;
   if (resendKey) {
+    // On free tier, always deliver to the account owner; include intended
+    // recipient in the subject so you know who it was meant for.
+    const resendAccountEmail = process.env.RESEND_ACCOUNT_EMAIL || FALLBACK_TO;
+    const deliverTo = resendAccountEmail;
+
     try {
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -36,9 +44,9 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           from: "Standard Fare Website <onboarding@resend.dev>",
-          to: recipient,
+          to: deliverTo,
           reply_to: email,
-          subject: `[Website] ${department ? `[${department}] ` : ""}${subject}`,
+          subject: `[Website] ${department ? `[${department}] ` : ""}${subject}${recipient !== deliverTo ? ` (for: ${recipient})` : ""}`,
           html: buildEmailHtml({ name, email, department, subject, message }),
         }),
       });
