@@ -520,6 +520,22 @@ const PressPreview = () => {
         />
 
         <ScrollRow>
+          {/* Blog card — always first */}
+          <Link to="/blog"
+            className={`${ITEM_WIDTH} min-w-[220px] group block bg-navy-light border border-flamingo border-opacity-30
+              rounded-lg overflow-hidden hover:border-flamingo hover:shadow-md transition-all duration-300`}>
+            <div className="bg-navy flex items-center justify-center p-4 border-b border-cream border-opacity-10">
+              <img src="/sf-logo.svg" alt="Standard Fare" className="h-10 w-auto" />
+            </div>
+            <div className="p-5">
+              <p className="font-mono text-flamingo text-[10px] tracking-editorial uppercase mb-2">Standard Fare</p>
+              <p className="font-display text-cream text-sm leading-snug group-hover:text-flamingo-dark transition-colors">
+                Our Blog
+              </p>
+              <p className="font-body text-cream text-xs opacity-50 mt-2">Stories, updates & more</p>
+            </div>
+          </Link>
+
           {topPress.map((p) => (
             <div key={p.id}
               className={`${ITEM_WIDTH} min-w-[220px] group block bg-navy-light border border-cream border-opacity-10

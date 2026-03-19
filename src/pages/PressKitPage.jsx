@@ -132,12 +132,20 @@ const PressKitPage = () => {
             <h2 className="font-display text-navy text-2xl mb-2">Downloadable Assets</h2>
             <span className="block w-10 h-px bg-flamingo mb-6" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Logo */}
+              {/* Logo — transparent */}
               <AssetCard
                 icon={Image}
-                title="Restaurant Logo"
-                description="High-resolution logo (PNG, transparent background)"
-                href="/logo512.png"
+                title="SF Logo (Transparent)"
+                description="White SF monogram on transparent background (SVG)"
+                href="/sf-logo.svg"
+              />
+
+              {/* Logo — navy background */}
+              <AssetCard
+                icon={Image}
+                title="SF Logo (Navy Background)"
+                description="White SF monogram on navy background (SVG)"
+                href="/sf-logo-navy.svg"
               />
 
               {/* Menu PDF */}

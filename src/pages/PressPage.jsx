@@ -122,7 +122,7 @@ const PressPage = () => {
                 className="group flex flex-col bg-cream-warm border border-navy border-opacity-10 rounded-lg
                            overflow-hidden hover:border-flamingo hover:shadow-lg transition-all duration-300">
                 <div className="bg-navy flex items-center justify-center p-6 min-h-[100px] border-b border-navy border-opacity-10">
-                  <BookOpen size={28} className="text-flamingo" />
+                  <img src="/sf-logo.svg" alt="Standard Fare" className="h-12 w-auto" />
                 </div>
                 <div className="p-6 flex flex-col flex-1 justify-between">
                   <div>

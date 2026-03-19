@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital@1&amp;display=swap');
+  </style>
+  <text x="50%" y="65" font-family="'Playfair Display', Georgia, serif" font-size="72" font-style="italic" fill="white" text-anchor="middle" letter-spacing="-2">SF</text>
+</svg>
