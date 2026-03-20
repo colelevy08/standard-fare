@@ -127,7 +127,7 @@ const PressPage = () => {
                 <div className="p-6 flex flex-col flex-1 justify-between">
                   <div>
                     <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-2">
-                      Our Blog
+                      Standard Fare
                     </p>
                     <h3 className="font-display text-navy text-base leading-snug group-hover:text-flamingo-dark transition-colors">
                       From the Kitchen

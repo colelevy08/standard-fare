@@ -530,7 +530,7 @@ const PressPreview = () => {
             <div className="p-5">
               <p className="font-mono text-flamingo text-[10px] tracking-editorial uppercase mb-2">Standard Fare</p>
               <p className="font-display text-cream text-sm leading-snug group-hover:text-flamingo-dark transition-colors">
-                Our Blog
+                From the Kitchen
               </p>
               <p className="font-body text-cream text-xs opacity-50 mt-2">Stories, updates & more</p>
             </div>
