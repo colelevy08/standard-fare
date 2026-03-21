@@ -17,17 +17,22 @@ const SmsClubSection = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!phone.trim()) return;
+    const trimmed = phone.trim().replace(/\D/g, "");
+    if (trimmed.length < 10) return; // basic phone validation
 
     // If webhook is configured, send to it
     if (club.webhookUrl) {
       try {
-        await fetch(club.webhookUrl, {
+        const res = await fetch(club.webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ phone: phone.trim(), source: "website" }),
         });
-      } catch (_) { /* silently fail — still show success */ }
+        if (!res.ok) throw new Error("Webhook failed");
+      } catch {
+        // Still show success to user (their intent is captured) but log for debugging
+        console.warn("SMS webhook failed — phone number not delivered to webhook");
+      }
     }
 
     setSubmitted(true);

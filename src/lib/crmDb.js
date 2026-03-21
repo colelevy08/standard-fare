@@ -30,6 +30,11 @@ const LS_SCHEDULE = "sf_content_schedule";
 const LS_PENDING_SYNC = "sf_pending_sync"; // queue of writes that failed to reach Supabase
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+const uid = (prefix = "") => {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return `${prefix}${crypto.randomUUID()}`;
+  return `${prefix}${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+};
+
 const lsGet = (key, fallback = []) => {
   try { return JSON.parse(localStorage.getItem(key) || "null") || fallback; }
   catch { return fallback; }
@@ -82,7 +87,7 @@ export const getCustomers = async (opts = {}) => {
 export const upsertCustomer = async (customer) => {
   const record = {
     ...customer,
-    id: customer.id || `cust_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    id: customer.id || uid("cust_"),
     updated_at: new Date().toISOString(),
     created_at: customer.created_at || new Date().toISOString(),
   };
@@ -161,7 +166,7 @@ export const getCustomerNotes = async (customerId) => {
 
 export const addNote = async (customerId, text, type = "general") => {
   const note = {
-    id: `note_${Date.now()}`,
+    id: uid("note_"),
     customer_id: customerId,
     text,
     type, // general, dietary, preference, complaint, compliment
@@ -204,7 +209,7 @@ export const deleteNote = async (noteId) => {
 
 export const logActivity = async (action, section, detail = "") => {
   const entry = {
-    id: `act_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    id: uid("act_"),
     action, // created, updated, deleted, published, unpublished, reordered, exported, imported
     section, // events, menus, gallery, blog, merch, bottles, etc.
     detail, // "Added event 'Wine Dinner'" or "Changed hours for Monday"
@@ -277,7 +282,7 @@ export const getScheduledItems = async () => {
 
 export const scheduleContent = async (item) => {
   const record = {
-    id: item.id || `sched_${Date.now()}`,
+    id: item.id || uid("sched_"),
     section: item.section, // blog, events, specials, etc.
     item_id: item.item_id, // ID of the item to publish
     publish_at: item.publish_at, // ISO date string

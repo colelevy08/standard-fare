@@ -11,23 +11,33 @@ const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", 
 
 const isActiveNow = (special) => {
   if (!special.active) return false;
+  if (!special.startTime || !special.endTime) return false;
   const now = new Date();
   const day = DAYS[now.getDay()];
-  if (!special.days.includes(day)) return false;
+  if (!special.days?.includes(day)) return false;
 
   const [sh, sm] = special.startTime.split(":").map(Number);
   const [eh, em] = special.endTime.split(":").map(Number);
+  if (isNaN(sh) || isNaN(eh)) return false;
   const mins = now.getHours() * 60 + now.getMinutes();
-  return mins >= sh * 60 + sm && mins <= eh * 60 + em;
+  const startMins = sh * 60 + (sm || 0);
+  const endMins = eh * 60 + (em || 0);
+  // Handle crossing midnight (e.g. 22:00 - 01:00)
+  if (endMins < startMins) return mins >= startMins || mins <= endMins;
+  return mins >= startMins && mins <= endMins;
 };
 
 const getTimeRemaining = (endTime) => {
+  if (!endTime) return null;
   const now = new Date();
   const [eh, em] = endTime.split(":").map(Number);
-  const endMins = eh * 60 + em;
+  if (isNaN(eh)) return null;
+  const endMins = eh * 60 + (em || 0);
   const nowMins = now.getHours() * 60 + now.getMinutes();
-  const diff = endMins - nowMins;
-  if (diff <= 0) return null;
+  let diff = endMins - nowMins;
+  // Handle crossing midnight
+  if (diff < 0) diff += 24 * 60;
+  if (diff <= 0 || diff > 24 * 60) return null;
   const hours = Math.floor(diff / 60);
   const minutes = diff % 60;
   return { hours, minutes, total: diff };

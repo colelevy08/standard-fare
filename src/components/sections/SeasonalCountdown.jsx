@@ -18,8 +18,10 @@ const SeasonalCountdown = () => {
     if (!config.enabled || !config.launchDate) return;
 
     const calc = () => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(config.launchDate)) return null;
       const now = new Date();
       const launch = new Date(config.launchDate + "T12:00:00");
+      if (isNaN(launch.getTime())) return null;
       const diff = launch - now;
       if (diff <= 0) return null;
 

@@ -45,7 +45,8 @@ const useAutoSave = (sectionKey, initialData, updateData, options = {}) => {
     }
   }, [sectionKey, updateData, isDirty, onSave]);
 
-  // Debounced auto-save
+  // Debounced auto-save (prevents overlapping saves via savingRef)
+  const savingRef = useRef(false);
   const updateDraft = useCallback((updater) => {
     setDraft(prev => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -56,7 +57,9 @@ const useAutoSave = (sectionKey, initialData, updateData, options = {}) => {
     if (enabled) {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
-        // Use ref to get latest draft at save time
+        // Prevent overlapping saves
+        if (savingRef.current) return;
+        savingRef.current = true;
         setSaving(true);
         updateData(sectionKey, draftRef.current)
           .then(() => {
@@ -66,7 +69,7 @@ const useAutoSave = (sectionKey, initialData, updateData, options = {}) => {
             onSave?.();
           })
           .catch(err => console.warn(`Auto-save failed for ${sectionKey}:`, err))
-          .finally(() => setSaving(false));
+          .finally(() => { setSaving(false); savingRef.current = false; });
       }, delay);
     }
   }, [sectionKey, updateData, delay, enabled, onSave]);

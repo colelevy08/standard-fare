@@ -19,7 +19,8 @@ const EmailSignupSection = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email) return;
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return;
 
     // If Mailchimp/Klaviyo is configured, submit to API
     if (config.provider && config.listId) {
@@ -27,7 +28,7 @@ const EmailSignupSection = () => {
         const res = await fetch("/api/email-signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, provider: config.provider, listId: config.listId }),
+          body: JSON.stringify({ email: trimmed, provider: config.provider, listId: config.listId }),
         });
         if (res.ok) {
           setStatus("success");
@@ -39,11 +40,13 @@ const EmailSignupSection = () => {
         setStatus("error");
       }
     } else {
-      // Store locally until integration is set up
+      // Store locally until integration is set up (deduplicate)
       try {
         const stored = JSON.parse(localStorage.getItem("sf_email_signups") || "[]");
-        stored.push({ email, date: new Date().toISOString() });
-        localStorage.setItem("sf_email_signups", JSON.stringify(stored));
+        if (!stored.some(s => s.email === trimmed)) {
+          stored.push({ email: trimmed, date: new Date().toISOString() });
+          localStorage.setItem("sf_email_signups", JSON.stringify(stored));
+        }
         setStatus("success");
         setEmail("");
       } catch {

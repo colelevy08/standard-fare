@@ -16,7 +16,8 @@ const isToday = (dayName) => {
 
 const HoursSection = () => {
   const { siteData } = useSite();
-  const { hours, location } = siteData;
+  const hours = siteData.hours || [];
+  const location = siteData.location || {};
 
   return (
     <section id="hours" className="section-padding bg-cream">

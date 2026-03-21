@@ -76,9 +76,10 @@ const BioModal = ({ member, onClose }) => {
 
         {/* Photo in modal — wide banner so landscape photos show in full */}
         {member.photo && (
-          <div className="w-full h-56 sm:h-72 overflow-hidden">
+          <div className="w-full h-56 sm:h-72 overflow-hidden bg-navy-dark">
             <img src={member.photo} alt={member.name}
-              className={`w-full h-full object-cover object-[center_20%]`} />
+              className={`w-full h-full object-cover object-[center_20%]`}
+              onError={(e) => { e.target.style.display = "none"; }} />
           </div>
         )}
 
