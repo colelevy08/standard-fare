@@ -70,3 +70,34 @@ export const deleteImage = async (publicUrl) => {
     console.warn("Could not delete from storage:", e.message);
   }
 };
+
+// ── listImages — browse all uploads in the gallery bucket ─────────────────
+export const listImages = async () => {
+  if (!supabase) return { images: [], error: "Supabase not configured" };
+  try {
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .list("photos", {
+        limit: 200,
+        sortBy: { column: "created_at", order: "desc" },
+      });
+    if (error) return { images: [], error: error.message };
+
+    const images = (data || [])
+      .filter((f) => f.name && !f.name.startsWith("."))
+      .map((f) => {
+        const { data: urlData } = supabase.storage
+          .from(BUCKET)
+          .getPublicUrl(`photos/${f.name}`);
+        return {
+          name: f.name,
+          url: urlData.publicUrl,
+          createdAt: f.created_at,
+          size: f.metadata?.size || 0,
+        };
+      });
+    return { images, error: null };
+  } catch (e) {
+    return { images: [], error: e.message };
+  }
+};

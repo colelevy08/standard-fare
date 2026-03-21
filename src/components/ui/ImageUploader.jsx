@@ -21,9 +21,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useRef, useState } from "react";
-import { Upload, X, Link, Loader } from "lucide-react";
+import { Upload, X, Link, Loader, Image } from "lucide-react";
 import { uploadImage } from "../../lib/supabaseStorage";
 import resizeImage from "../../lib/imageResize";
+import MediaLibrary from "./MediaLibrary";
 
 const ImageUploader = ({ value, onChange, label = "Image", height = "h-40" }) => {
   const fileInputRef              = useRef(null);
@@ -32,6 +33,7 @@ const ImageUploader = ({ value, onChange, label = "Image", height = "h-40" }) =>
   const [urlValue,  setUrlValue]  = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState("");
+  const [showLibrary, setShowLibrary] = useState(false);
 
   // ── Handle file — upload to Supabase Storage or fall back to base64 ──────
   const handleFile = async (file) => {
@@ -170,18 +172,29 @@ const ImageUploader = ({ value, onChange, label = "Image", height = "h-40" }) =>
         <p className="font-body text-xs text-flamingo-dark mt-1">{uploadErr}</p>
       )}
 
-      {/* URL paste section — data-no-filepicker prevents the zone click from firing */}
+      {/* URL paste + Browse library — data-no-filepicker prevents zone click */}
       <div data-no-filepicker onClick={(e) => e.stopPropagation()}>
         {!showUrl ? (
-          <button
-            type="button"
-            onClick={() => setShowUrl(true)}
-            className="mt-2 flex items-center gap-1 font-body text-xs text-navy opacity-40
-                       hover:opacity-70 transition-opacity"
-          >
-            <Link size={12} />
-            Or paste an image URL
-          </button>
+          <div className="mt-2 flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setShowUrl(true)}
+              className="flex items-center gap-1 font-body text-xs text-navy opacity-40
+                         hover:opacity-70 transition-opacity"
+            >
+              <Link size={12} />
+              Paste URL
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowLibrary(true)}
+              className="flex items-center gap-1 font-body text-xs text-flamingo opacity-70
+                         hover:opacity-100 transition-opacity"
+            >
+              <Image size={12} />
+              Browse uploads
+            </button>
+          </div>
         ) : (
           <div className="mt-2 flex gap-2">
             <input
@@ -212,6 +225,13 @@ const ImageUploader = ({ value, onChange, label = "Image", height = "h-40" }) =>
           </div>
         )}
       </div>
+
+      {/* Media Library modal */}
+      <MediaLibrary
+        isOpen={showLibrary}
+        onClose={() => setShowLibrary(false)}
+        onSelect={(url) => onChange(url)}
+      />
     </div>
   );
 };
