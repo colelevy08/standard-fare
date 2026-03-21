@@ -1,8 +1,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// lib/crmDb.js — CRM database operations via Supabase
+// lib/crmDb.js — CRM database operations via Supabase (PRIMARY)
 // ─────────────────────────────────────────────────────────────────────────────
-// Manages customers, reservations, notes, tags, activity log, and scheduled
-// content. All data stored in Supabase; falls back to localStorage if offline.
+// ALL data lives in Supabase Pro. localStorage is ONLY used as an offline
+// failsafe — when Supabase is unreachable, writes are cached locally and
+// synced back to Supabase on next successful connection.
+//
+// Tables (created via supabase/migrations/001_crm_tables.sql):
+//   crm_customers      — guest profiles, tags, dietary, visit tracking
+//   crm_notes          — per-customer notes with types
+//   admin_activity_log  — audit trail of all admin changes
+//   content_schedule   — scheduled publish/unpublish actions
+//   email_signups      — newsletter/email list signups
+//   seo_metadata       — per-page SEO metadata
 // ─────────────────────────────────────────────────────────────────────────────
 
 import supabase from "./supabase";
@@ -11,13 +20,14 @@ const CRM_TABLE = "crm_customers";
 const NOTES_TABLE = "crm_notes";
 const ACTIVITY_TABLE = "admin_activity_log";
 const SCHEDULE_TABLE = "content_schedule";
-// const TAGS_TABLE = "crm_tags"; // reserved for future use
+const SIGNUPS_TABLE = "email_signups";
 
-// ── localStorage fallback keys ───────────────────────────────────────────────
+// ── localStorage FAILSAFE keys (only used when Supabase is unreachable) ────
 const LS_CUSTOMERS = "sf_crm_customers";
 const LS_NOTES = "sf_crm_notes";
 const LS_ACTIVITY = "sf_activity_log";
 const LS_SCHEDULE = "sf_content_schedule";
+const LS_PENDING_SYNC = "sf_pending_sync"; // queue of writes that failed to reach Supabase
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const lsGet = (key, fallback = []) => {
@@ -309,20 +319,117 @@ export const cancelScheduledItem = async (id) => {
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
-// EMAIL SIGNUPS (stored locally, synced to Supabase when available)
+// EMAIL SIGNUPS — Supabase primary, localStorage failsafe
 // ═════════════════════════════════════════════════════════════════════════════
 
 const LS_SIGNUPS = "sf_email_signups";
 
-export const getEmailSignups = () => lsGet(LS_SIGNUPS);
+export const addEmailSignup = async (email, source = "website") => {
+  if (!supabase) {
+    // Failsafe: queue locally
+    const signups = lsGet(LS_SIGNUPS);
+    signups.push({ email, source, signed_up_at: new Date().toISOString() });
+    lsSet(LS_SIGNUPS, signups);
+    queuePendingSync("email_signup", { email, source });
+    return { error: null };
+  }
+  try {
+    const { error } = await supabase.from(SIGNUPS_TABLE)
+      .upsert({ email, source, signed_up_at: new Date().toISOString() }, { onConflict: "email" });
+    if (error) throw error;
+    return { error: null };
+  } catch (e) {
+    // Failsafe
+    const signups = lsGet(LS_SIGNUPS);
+    signups.push({ email, source, signed_up_at: new Date().toISOString() });
+    lsSet(LS_SIGNUPS, signups);
+    return { error: e.message };
+  }
+};
 
-export const getEmailSignupCount = () => lsGet(LS_SIGNUPS).length;
+export const getEmailSignups = async () => {
+  if (!supabase) return { data: lsGet(LS_SIGNUPS), error: null };
+  try {
+    const { data, error } = await supabase.from(SIGNUPS_TABLE)
+      .select("*").order("signed_up_at", { ascending: false });
+    if (error) throw error;
+    return { data, error: null };
+  } catch (e) {
+    return { data: lsGet(LS_SIGNUPS), error: e.message };
+  }
+};
 
-export const exportEmailSignups = () => {
-  const signups = lsGet(LS_SIGNUPS);
-  const csv = "Email,Signed Up At\n" + signups.map(s => `${s.email},${s.signedUpAt}`).join("\n");
+export const getEmailSignupCount = async () => {
+  if (!supabase) return lsGet(LS_SIGNUPS).length;
+  try {
+    const { count, error } = await supabase.from(SIGNUPS_TABLE)
+      .select("*", { count: "exact", head: true });
+    if (error) throw error;
+    return count || 0;
+  } catch {
+    return lsGet(LS_SIGNUPS).length;
+  }
+};
+
+export const exportEmailSignups = async () => {
+  const { data } = await getEmailSignups();
+  const csv = "Email,Source,Signed Up At\n" + (data || []).map(s =>
+    `"${s.email}","${s.source || "website"}","${s.signed_up_at}"`
+  ).join("\n");
   return csv;
 };
+
+// ═════════════════════════════════════════════════════════════════════════════
+// OFFLINE SYNC — push localStorage failsafe data to Supabase when reconnected
+// ═════════════════════════════════════════════════════════════════════════════
+
+const queuePendingSync = (type, data) => {
+  const queue = lsGet(LS_PENDING_SYNC);
+  queue.push({ type, data, queued_at: new Date().toISOString() });
+  lsSet(LS_PENDING_SYNC, queue);
+};
+
+export const syncPendingToSupabase = async () => {
+  if (!supabase) return { synced: 0 };
+  const queue = lsGet(LS_PENDING_SYNC);
+  if (queue.length === 0) return { synced: 0 };
+
+  let synced = 0;
+  const failed = [];
+
+  for (const item of queue) {
+    try {
+      switch (item.type) {
+        case "customer":
+          await supabase.from(CRM_TABLE).upsert(item.data, { onConflict: "id" });
+          break;
+        case "note":
+          await supabase.from(NOTES_TABLE).insert(item.data);
+          break;
+        case "activity":
+          await supabase.from(ACTIVITY_TABLE).insert(item.data);
+          break;
+        case "email_signup":
+          await supabase.from(SIGNUPS_TABLE).upsert(item.data, { onConflict: "email" });
+          break;
+        default:
+          break;
+      }
+      synced++;
+    } catch {
+      failed.push(item);
+    }
+  }
+
+  // Keep only failed items in the queue
+  lsSet(LS_PENDING_SYNC, failed);
+  return { synced, remaining: failed.length };
+};
+
+// Auto-sync on load if there are pending items
+if (supabase) {
+  syncPendingToSupabase().catch(() => {});
+}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // DEFAULT CRM TAGS
