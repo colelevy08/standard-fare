@@ -581,9 +581,9 @@ const AdminPage = () => {
     return (
       <div>
         {/* ── OUR STORY ──────────────────────────────────────────── */}
-        <div className="mb-8 pb-8 border-b border-navy border-opacity-10">
-          <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-5">
-            Our Story
+        <div className="mb-8 pb-8 border-b border-navy/[0.06]">
+          <p className="font-mono text-flamingo/60 text-[11px] tracking-editorial uppercase mb-5 flex items-center gap-2">
+            <span className="w-1 h-4 bg-flamingo/40 rounded-full" /> Our Story
           </p>
 
           <Field
@@ -602,9 +602,9 @@ const AdminPage = () => {
             helpText="This text appears in the 'Our Story' section. Mentioning 'Bocage Champagne Bar' automatically hyperlinks it."
           />
 
-          <div className="border border-flamingo border-opacity-20 rounded-xl p-5 bg-flamingo bg-opacity-5 mb-4">
-            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">
-              Also From Our Team — Bocage Champagne Bar
+          <div className="border border-flamingo/15 rounded-2xl p-5 bg-flamingo/[0.03] mb-4">
+            <p className="font-mono text-flamingo/60 text-[11px] tracking-editorial uppercase mb-3 flex items-center gap-2">
+              <span className="w-1 h-4 bg-flamingo/30 rounded-full" /> Also From Our Team — Bocage Champagne Bar
             </p>
             <p className="font-body text-sm text-navy opacity-60 mb-4 leading-relaxed">
               The button that appears under the founder photos linking to Bocage.
@@ -644,17 +644,17 @@ const AdminPage = () => {
 
         {/* ── OUR TEAM ───────────────────────────────────────────── */}
         <div className="mb-6">
-          <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-2">
-            Our Team
+          <p className="font-mono text-flamingo/60 text-[11px] tracking-editorial uppercase mb-2 flex items-center gap-2">
+            <span className="w-1 h-4 bg-flamingo/40 rounded-full" /> Our Team ({team.length})
           </p>
-          <p className="font-body text-sm text-navy opacity-50 mb-5">
-            Each founder card appears as a clickable circle in the Our Story section.
-            Clicking opens their full bio modal.
+          <p className="font-body text-xs text-navy/40 mb-5 leading-relaxed">
+            Each team member appears as a clickable circle in the Our Story section. Clicking opens their full bio modal.
           </p>
 
           {team.map((member, i) => (
             <CollapsibleItem
               key={i}
+              thumbnail={member.photo}
               label={member.name || `Team Member ${i + 1}`}
               sublabel={member.role || "No role set"}
               defaultOpen={!member.name}
@@ -819,6 +819,20 @@ const AdminPage = () => {
 
     return (
       <div>
+        {/* Map preview */}
+        {loc.mapEmbedUrl && (
+          <div className="mb-4 rounded-2xl overflow-hidden border border-navy/[0.08] shadow-sm">
+            <iframe src={loc.mapEmbedUrl} title="Map preview" className="w-full h-40" loading="lazy" />
+            <div className="bg-white px-4 py-2.5 flex items-center justify-between">
+              <div>
+                <p className="font-body text-navy text-sm font-semibold">{loc.address}</p>
+                <p className="font-body text-navy/40 text-xs">{loc.city}</p>
+              </div>
+              {loc.phone && <p className="font-mono text-[10px] text-navy/30">{loc.phone}</p>}
+            </div>
+          </div>
+        )}
+
         {Object.entries(loc).map(([key, val]) => (
           <CollapsibleItem
             key={key}
