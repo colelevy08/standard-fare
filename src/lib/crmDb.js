@@ -11,7 +11,7 @@ const CRM_TABLE = "crm_customers";
 const NOTES_TABLE = "crm_notes";
 const ACTIVITY_TABLE = "admin_activity_log";
 const SCHEDULE_TABLE = "content_schedule";
-const TAGS_TABLE = "crm_tags";
+// const TAGS_TABLE = "crm_tags"; // reserved for future use
 
 // ── localStorage fallback keys ───────────────────────────────────────────────
 const LS_CUSTOMERS = "sf_crm_customers";

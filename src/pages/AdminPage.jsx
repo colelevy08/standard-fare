@@ -21,7 +21,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Plus, Trash2, Save, ChevronDown, ChevronUp, Undo2, GripVertical, RefreshCw, Eye, Copy, Search, X, ChevronRight, ArrowUp, Check, AlertCircle, BarChart3, Users, Clock, Calendar, Globe, Command } from "lucide-react";
+import { LogOut, Plus, Trash2, Save, ChevronDown, ChevronUp, Undo2, GripVertical, RefreshCw, Eye, Copy, Search, X, ArrowUp, Check, AlertCircle, Clock, Command } from "lucide-react";
 import { useSite } from "../context/AdminContext";
 import PageLayout from "../components/layout/PageLayout";
 import ImageUploader from "../components/ui/ImageUploader";
@@ -40,8 +40,7 @@ import SEOEditor from "../components/admin/SEOEditor";
 import AnalyticsDashboard from "../components/admin/AnalyticsDashboard";
 import useAdminSession from "../hooks/useAdminSession";
 import { logActivity } from "../lib/crmDb";
-import BulkActions, { useBulkSelect } from "../components/admin/BulkActions";
-import TemplatePicker, { EVENT_TEMPLATES, BLOG_TEMPLATES, MENU_ITEM_TEMPLATES } from "../components/admin/ContentTemplates";
+import TemplatePicker, { EVENT_TEMPLATES, BLOG_TEMPLATES } from "../components/admin/ContentTemplates";
 
 // ── Sortable wrapper for drag-and-drop reorder ──────────────────────────
 const SortableItem = ({ id, children }) => {
@@ -227,10 +226,8 @@ const validateEmail = (v) => {
   if (!v) return null;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : "Enter a valid email address";
 };
-const validatePrice = (v) => {
-  if (!v) return null;
-  return /^\d+(\.\d{1,2})?$/.test(v) ? null : "Enter a valid price (e.g. 17 or 17.50)";
-};
+// validatePrice available if needed:
+// const validatePrice = (v) => !v ? null : /^\d+(\.\d{1,2})?$/.test(v) ? null : "Enter a valid price";
 const validateDate = (v) => {
   if (!v) return null;
   return /^\d{4}-\d{2}-\d{2}$/.test(v) ? null : "Use YYYY-MM-DD format (e.g. 2026-04-12)";
@@ -461,15 +458,24 @@ const AdminPage = () => {
     return () => { clearTimeout(timer); observer.disconnect(); };
   }, [isAdmin]);
 
+  // ── Collapse All / Expand All ──────────────────────────────────────
+  const [allCollapsed, setAllCollapsed] = useState(true);
+  const toggleAllSections = useCallback(() => {
+    const buttons = document.querySelectorAll(".admin-card > button[aria-expanded]");
+    buttons.forEach((btn) => {
+      const isOpen = btn.getAttribute("aria-expanded") === "true";
+      if (allCollapsed ? isOpen : !isOpen) btn.click();
+    });
+    setAllCollapsed(!allCollapsed);
+  }, [allCollapsed]);
+
   // ── Keyboard shortcuts ────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e) => {
-      // Cmd+K / Ctrl+K — open command palette
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setShowCommandPalette(prev => !prev);
       }
-      // Cmd+S / Ctrl+S — click the nearest visible Save button
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
         const saveBtn = document.querySelector("button.btn-primary");
@@ -478,27 +484,24 @@ const AdminPage = () => {
           setToast({ message: "Saved!", type: "success" });
         }
       }
-      // Cmd+Z / Ctrl+Z — undo last save
       if ((e.metaKey || e.ctrlKey) && e.key === "z" && canUndo) {
         e.preventDefault();
         undo();
         setToast({ message: "Undone!", type: "success" });
       }
-      // Cmd+E / Ctrl+E — expand/collapse all sections
       if ((e.metaKey || e.ctrlKey) && e.key === "e") {
         e.preventDefault();
         toggleAllSections();
       }
-      // Escape — close command palette or ConfirmDelete dialog
       if (e.key === "Escape") {
         if (showCommandPalette) { setShowCommandPalette(false); return; }
         const overlay = document.querySelector(".fixed.inset-0.z-\\[70\\]");
-        if (overlay) overlay.click(); // triggers onCancel via overlay click handler
+        if (overlay) overlay.click();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [canUndo, undo, showCommandPalette, toggleAllSections]);
 
   // ── Warn before leaving with unsaved changes ──────────────────────
   useEffect(() => {
@@ -511,18 +514,6 @@ const AdminPage = () => {
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [saveStatus]);
-
-  // ── Collapse All / Expand All ──────────────────────────────────────
-  const [allCollapsed, setAllCollapsed] = useState(true);
-  const toggleAllSections = useCallback(() => {
-    // Find all admin-card toggle buttons and click them to match target state
-    const buttons = document.querySelectorAll(".admin-card > button[aria-expanded]");
-    buttons.forEach((btn) => {
-      const isOpen = btn.getAttribute("aria-expanded") === "true";
-      if (allCollapsed ? isOpen : !isOpen) btn.click();
-    });
-    setAllCollapsed(!allCollapsed);
-  }, [allCollapsed]);
 
   // ── Quick-jump scroll handler ────────────────────────────────────────
   const handleJump = useCallback((id) => {

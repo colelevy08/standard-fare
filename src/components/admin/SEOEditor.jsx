@@ -7,7 +7,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState } from "react";
-import { Save, Eye, Globe, Search, Share2 } from "lucide-react";
+import { Save, Globe, Search, Share2 } from "lucide-react";
 
 const PAGES = [
   { key: "home", label: "Home", path: "/" },

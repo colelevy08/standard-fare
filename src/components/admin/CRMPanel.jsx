@@ -7,9 +7,9 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Search, X, Plus, Trash2, Save, ChevronDown, ChevronUp,
-  Users, Star, Mail, Phone, Tag, MessageSquare, Download,
-  UserPlus, Filter, Edit3, Check, Calendar, MapPin,
+  Search, X, Trash2, Save, ChevronDown, ChevronUp,
+  Users, Star, Mail, Phone, MessageSquare, Download,
+  UserPlus, Edit3, Check, Calendar, MapPin,
 } from "lucide-react";
 import {
   getCustomers, upsertCustomer, deleteCustomer,

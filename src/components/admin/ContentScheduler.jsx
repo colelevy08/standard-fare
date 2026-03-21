@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Calendar, Clock, X, Check, Trash2, Plus } from "lucide-react";
+import { Calendar, Clock, X, Plus } from "lucide-react";
 import { getScheduledItems, scheduleContent, cancelScheduledItem, logActivity } from "../../lib/crmDb";
 
 const formatDate = (iso) => {

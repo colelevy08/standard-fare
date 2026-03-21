@@ -62,7 +62,7 @@ const ResyAvailability = () => {
   const [data, setData] = useState(null);
   const [partySize, setPartySize] = useState(2);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [, setError] = useState(null);
   const [manualDate, setManualDate] = useState(null); // for browsing dates
 
   const fetchAvailability = useCallback(async (dateStr) => {

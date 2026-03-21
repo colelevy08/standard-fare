@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState } from "react";
-import { FileText, Plus, X } from "lucide-react";
+import { FileText } from "lucide-react";
 
 // ── Event Templates ──────────────────────────────────────────────────────
 export const EVENT_TEMPLATES = [

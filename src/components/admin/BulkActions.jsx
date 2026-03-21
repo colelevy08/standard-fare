@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React from "react";
-import { Check, X, Trash2, Eye, EyeOff, Copy, Tag } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 const BulkActions = ({ selectedCount, totalCount, onSelectAll, onClearSelection, actions = [] }) => {
   if (selectedCount === 0) return null;

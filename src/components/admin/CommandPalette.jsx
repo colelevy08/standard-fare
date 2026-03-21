@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Search, X, ChevronRight, Plus, Settings, Eye, Save, Undo2, Download, Upload } from "lucide-react";
+import { Search, ChevronRight, Plus, Settings, Eye, Undo2, Download } from "lucide-react";
 
 const CommandPalette = ({ isOpen, onClose, sections, onJump, actions }) => {
   const [query, setQuery] = useState("");

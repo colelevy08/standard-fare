@@ -50,10 +50,11 @@ const useAdminSession = (isAdmin, logout) => {
       }
     }, 30000);
 
+    const warningTimer = warningRef.current;
     return () => {
       events.forEach(e => window.removeEventListener(e, resetActivity));
       if (timerRef.current) clearInterval(timerRef.current);
-      if (warningRef.current) clearTimeout(warningRef.current);
+      if (warningTimer) clearTimeout(warningTimer);
     };
   }, [isAdmin, logout, resetActivity]);
 
