@@ -74,9 +74,13 @@ const SaveToast = ({ message, type = "success", onDismiss }) => {
     return () => clearTimeout(timer);
   }, [onDismiss]);
   return (
-    <div role="status" aria-live="polite" className={`fixed bottom-20 right-6 z-[60] animate-fade-in flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl font-body text-sm
-      ${type === "success" ? "bg-green-700 text-white" : "bg-red-600 text-white"}`}>
-      {type === "success" ? <Check size={15} /> : <AlertCircle size={15} />}
+    <div role="status" aria-live="polite" className={`fixed bottom-20 right-6 z-[60] animate-scale-in flex items-center gap-3 px-5 py-3.5 rounded-2xl font-body text-sm backdrop-blur-sm
+      ${type === "success"
+        ? "bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg shadow-green-700/20"
+        : "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-600/20"}`}>
+      <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${type === "success" ? "bg-white/20" : "bg-white/20"}`}>
+        {type === "success" ? <Check size={13} /> : <AlertCircle size={13} />}
+      </span>
       {message}
     </div>
   );
@@ -93,13 +97,16 @@ const ConfirmDelete = ({ itemName, onConfirm, onCancel }) => {
     return () => window.removeEventListener("keydown", handler);
   }, [onCancel]);
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-40 animate-fade-in" onClick={onCancel} role="dialog" aria-modal="true" aria-label={`Delete ${itemName}`}>
-      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm mx-4" onClick={e => e.stopPropagation()}>
-        <p className="font-display text-navy text-lg mb-2">Delete {itemName}?</p>
-        <p className="font-body text-sm text-navy opacity-60 mb-5">This action cannot be undone.</p>
-        <div className="flex gap-3 justify-end">
-          <button ref={cancelRef} onClick={onCancel} className="font-body text-sm text-navy opacity-50 hover:opacity-80 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-flamingo focus:ring-opacity-40">Cancel</button>
-          <button onClick={onConfirm} className="font-body text-sm bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400">Delete</button>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-navy/30 backdrop-blur-sm animate-fade-in" onClick={onCancel} role="dialog" aria-modal="true" aria-label={`Delete ${itemName}`}>
+      <div className="bg-white rounded-2xl shadow-admin-lg p-7 max-w-sm mx-4 animate-scale-in" onClick={e => e.stopPropagation()}>
+        <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+          <Trash2 size={20} className="text-red-500" />
+        </div>
+        <p className="font-display text-navy text-lg mb-2 text-center">Delete {itemName}?</p>
+        <p className="font-body text-sm text-navy opacity-50 mb-6 text-center leading-relaxed">This action cannot be undone.</p>
+        <div className="flex gap-3">
+          <button ref={cancelRef} onClick={onCancel} className="flex-1 font-body text-sm text-navy opacity-60 hover:opacity-100 px-4 py-2.5 rounded-xl border border-navy border-opacity-15 hover:border-opacity-30 transition-all focus:outline-none focus:ring-2 focus:ring-flamingo focus:ring-opacity-40">Cancel</button>
+          <button onClick={onConfirm} className="flex-1 font-body text-sm bg-red-500 text-white px-4 py-2.5 rounded-xl hover:bg-red-600 transition-all focus:outline-none focus:ring-2 focus:ring-red-400 shadow-sm hover:shadow-md">Delete</button>
         </div>
       </div>
     </div>
@@ -117,8 +124,8 @@ const ScrollToTop = () => {
   if (!show) return null;
   return (
     <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className="fixed bottom-6 left-6 z-50 w-10 h-10 bg-navy text-cream rounded-full shadow-xl
-        flex items-center justify-center hover:bg-flamingo transition-colors" title="Scroll to top">
+      className="fixed bottom-6 left-6 z-50 w-11 h-11 bg-navy/80 backdrop-blur-sm text-cream rounded-2xl shadow-admin-lg
+        flex items-center justify-center hover:bg-flamingo hover:scale-110 transition-all duration-200" title="Scroll to top">
       <ArrowUp size={18} />
     </button>
   );
@@ -192,12 +199,12 @@ const QuickJump = ({ activeSection, onJump, searchQuery, onSearchChange }) => {
 
   return (
     <div className="hidden xl:block fixed left-4 top-32 w-48 max-h-[calc(100vh-160px)] overflow-y-auto z-40
-      bg-white border border-navy border-opacity-10 rounded-xl shadow-lg p-3 text-xs">
+      admin-sidebar-glass border border-navy/[0.08] rounded-2xl shadow-admin-lg p-3 text-xs">
       {/* Search */}
       <div className="relative mb-3">
         <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-navy opacity-30" />
         <input value={searchQuery} onChange={e => onSearchChange(e.target.value)}
-          className="w-full pl-7 pr-6 py-1.5 rounded-lg border border-navy border-opacity-15 font-body text-xs text-navy placeholder:text-navy placeholder:opacity-30"
+          className="w-full pl-7 pr-6 py-2 rounded-xl border border-navy/10 font-body text-xs text-navy placeholder:text-navy/25 bg-white/60 focus:bg-white focus:border-flamingo/30 focus:ring-1 focus:ring-flamingo/20 focus:outline-none transition-all"
           placeholder="Jump to section..." />
         {searchQuery && (
           <button onClick={() => onSearchChange("")} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-navy opacity-30 hover:opacity-60">
@@ -210,8 +217,10 @@ const QuickJump = ({ activeSection, onJump, searchQuery, onSearchChange }) => {
           <p className="font-mono text-[9px] tracking-editorial uppercase text-navy opacity-30 mb-1 px-1">{g.icon} {g.group}</p>
           {g.sections.map(s => (
             <button key={s.id} onClick={() => onJump(s.id)}
-              className={`w-full text-left px-2 py-1 rounded font-body text-[11px] truncate transition-colors focus:outline-none focus:ring-1 focus:ring-flamingo focus:ring-opacity-40
-                ${activeSection === s.id ? "bg-flamingo bg-opacity-10 text-flamingo font-semibold" : "text-navy opacity-60 hover:opacity-100 hover:bg-cream-warm"}`}>
+              className={`w-full text-left px-2.5 py-1.5 rounded-lg font-body text-[11px] truncate transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-flamingo/30
+                ${activeSection === s.id
+                  ? "bg-flamingo/10 text-flamingo font-semibold border-l-2 border-flamingo"
+                  : "text-navy/50 hover:text-navy/80 hover:bg-cream-warm/60 border-l-2 border-transparent"}`}>
               {s.title.replace(" — ", " ")}
             </button>
           ))}
@@ -244,17 +253,20 @@ const validatePhone = (v) => {
 
 // ── View on Site link ──────────────────────────────────────────────────
 const ViewOnSite = ({ path }) => (
-  <Link to={path} target="_blank" className="inline-flex items-center gap-1 font-mono text-[10px] tracking-editorial uppercase text-flamingo opacity-60 hover:opacity-100 transition-opacity">
+  <Link to={path} target="_blank" className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-editorial uppercase text-flamingo/50 hover:text-flamingo transition-all px-2.5 py-1 rounded-lg hover:bg-flamingo/5">
     <Eye size={11} /> View on site
   </Link>
 );
 
 // ── Empty State ──────────────────────────────────────────────────────
 const EmptyState = ({ message, onAdd, addLabel }) => (
-  <div className="text-center py-8 border-2 border-dashed border-navy border-opacity-10 rounded-xl">
-    <p className="font-body text-sm text-navy opacity-35 mb-3">{message}</p>
+  <div className="text-center py-12 border-2 border-dashed border-navy/[0.08] rounded-2xl bg-navy/[0.01]">
+    <div className="w-12 h-12 rounded-2xl bg-navy/[0.04] flex items-center justify-center mx-auto mb-4">
+      <Plus size={20} className="text-navy/20" />
+    </div>
+    <p className="font-body text-sm text-navy/35 mb-4">{message}</p>
     {onAdd && (
-      <button onClick={onAdd} className="inline-flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark transition-colors">
+      <button onClick={onAdd} className="inline-flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark transition-all hover:gap-3 px-5 py-2.5 rounded-xl bg-flamingo/5 hover:bg-flamingo/10">
         <Plus size={14} />{addLabel || "Add First Item"}
       </button>
     )}
@@ -267,28 +279,32 @@ const EmptyState = ({ message, onAdd, addLabel }) => (
 const AdminSection = ({ title, children, defaultOpen = false, id, badge, description }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="admin-card border border-navy border-opacity-10" id={id ? `section-${id}` : undefined}>
+    <div className="admin-card" id={id ? `section-${id}` : undefined}>
       {/* Clickable header */}
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex justify-between items-center text-left"
+        className="w-full flex justify-between items-center text-left group"
         aria-expanded={open}
         aria-controls={id ? `content-${id}` : undefined}
       >
         <div className="flex items-center gap-3">
-          <h3 className="font-display text-navy text-lg">{title}</h3>
+          <h3 className="font-display text-navy text-lg group-hover:text-flamingo transition-colors duration-200">{title}</h3>
           {badge != null && badge > 0 && (
-            <span className="font-mono text-[10px] bg-flamingo bg-opacity-15 text-flamingo px-2 py-0.5 rounded-full">{badge}</span>
+            <span className="font-mono text-[10px] bg-flamingo/10 text-flamingo px-2.5 py-0.5 rounded-full font-semibold">{badge}</span>
           )}
         </div>
-        {open ? <ChevronUp size={18} className="text-flamingo" /> : <ChevronDown size={18} className="text-navy opacity-40" />}
+        <span className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
+          open ? "bg-flamingo/10 text-flamingo rotate-0" : "bg-navy/[0.04] text-navy/30 group-hover:bg-flamingo/5 group-hover:text-flamingo/50"
+        }`}>
+          {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </span>
       </button>
       {/* Description — visible even when collapsed */}
       {description && !open && (
-        <p className="font-body text-xs text-navy opacity-35 mt-2 leading-relaxed">{description}</p>
+        <p className="font-body text-xs text-navy/30 mt-3 leading-relaxed">{description}</p>
       )}
       {/* Collapsible content */}
-      {open && <div className="mt-6 border-t border-navy border-opacity-10 pt-6" id={id ? `content-${id}` : undefined} role="region">{children}</div>}
+      {open && <div className="mt-6 border-t border-navy/[0.06] pt-6 admin-collapse-enter" id={id ? `content-${id}` : undefined} role="region">{children}</div>}
     </div>
   );
 };
@@ -301,7 +317,7 @@ const CollapsibleItem = ({ label, sublabel, defaultOpen = false, onRemove, child
   const [showConfirm, setShowConfirm] = useState(false);
   const displayLabel = typeof label === "string" ? label : "this item";
   return (
-    <div className={`border rounded-xl mb-3 overflow-hidden transition-colors ${open ? "border-flamingo border-opacity-30" : "border-navy border-opacity-10"}`}>
+    <div className={`border rounded-2xl mb-3 overflow-hidden transition-all duration-200 ${open ? "border-flamingo/25 shadow-admin" : "border-navy/[0.08] hover:border-navy/15 shadow-sm hover:shadow-admin"}`}>
       {showConfirm && (
         <ConfirmDelete
           itemName={typeof label === "string" ? `"${label}"` : "this item"}
@@ -310,7 +326,7 @@ const CollapsibleItem = ({ label, sublabel, defaultOpen = false, onRemove, child
         />
       )}
       {/* Header row — always visible */}
-      <div className="flex items-center justify-between px-4 py-3 bg-cream-warm cursor-pointer select-none"
+      <div className={`flex items-center justify-between px-5 py-3.5 cursor-pointer select-none transition-colors duration-200 ${open ? "bg-cream-warm" : "bg-cream-warm/50 hover:bg-cream-warm"}`}
         onClick={() => setOpen(!open)}
         role="button"
         tabIndex={0}
@@ -351,7 +367,7 @@ const CollapsibleItem = ({ label, sublabel, defaultOpen = false, onRemove, child
       </div>
       {/* Expandable detail area */}
       {open && (
-        <div className="px-5 py-5 border-t border-navy border-opacity-10 bg-white">
+        <div className="px-5 py-5 border-t border-navy/[0.06] bg-white admin-collapse-enter">
           {children}
         </div>
       )}
@@ -367,11 +383,11 @@ const Field = ({ label, value, onChange, type = "text", multiline = false, place
   return (
     <div className="mb-4">
       <div className="flex items-center justify-between mb-1">
-        <label htmlFor={fieldId} className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50">
-          {label}{required && <span className="text-flamingo ml-1">*</span>}
+        <label htmlFor={fieldId} className="font-mono text-[11px] tracking-editorial uppercase text-navy/45 font-medium">
+          {label}{required && <span className="text-flamingo/70 ml-0.5">*</span>}
         </label>
         {maxLength && (
-          <span className={`font-mono text-[10px] ${strVal.length > maxLength ? "text-red-500" : "text-navy opacity-25"}`}>
+          <span className={`font-mono text-[10px] tabular-nums ${strVal.length > maxLength ? "text-red-500 font-semibold" : strVal.length > maxLength * 0.9 ? "text-amber-500" : "text-navy/20"}`}>
             {strVal.length}/{maxLength}
           </span>
         )}
@@ -3566,10 +3582,11 @@ const AdminPage = () => {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <PageLayout>
-      <div className="bg-navy pt-32 pb-12 text-center">
-        <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">Owner Portal</p>
-        <h1 className="font-display text-cream text-4xl">Manage Website</h1>
-        <span className="block w-16 h-px bg-flamingo mx-auto mt-6" />
+      <div className="admin-hero-gradient pt-32 pb-14 text-center relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+        <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3 relative">Owner Portal</p>
+        <h1 className="font-display text-cream text-4xl relative">Manage Website</h1>
+        <span className="block w-20 h-0.5 bg-gradient-to-r from-transparent via-flamingo to-transparent mx-auto mt-6 relative" />
       </div>
 
       {/* ── Quick-Jump Sidebar ────────────────────────────────── */}
@@ -3686,8 +3703,8 @@ const AdminPage = () => {
           </div>
 
           {/* ── Section summary ─────────────────────────────────────── */}
-          <div className="mb-6 p-4 bg-cream-warm rounded-lg border border-navy border-opacity-10">
-            <div className="flex flex-wrap gap-x-6 gap-y-1 text-[10px] font-mono tracking-editorial uppercase text-navy opacity-40">
+          <div className="mb-8 p-5 bg-white rounded-2xl border border-navy/[0.06] shadow-admin admin-pattern-bg">
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-[10px] font-mono tracking-editorial uppercase text-navy/35">
               <span>{(siteData.events || []).length} events</span>
               <span>{(siteData.blog || []).length} blog posts</span>
               <span>{(siteData.gallery || []).length} gallery items</span>
@@ -3703,7 +3720,7 @@ const AdminPage = () => {
 
           {/* ── DASHBOARD ───────────────────────────────────────────── */}
           <div className="mb-8">
-            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+            <p className="font-mono text-flamingo/70 text-[11px] tracking-editorial uppercase mb-5 flex items-center gap-2 admin-group-label w-fit">
               <span>📊</span> Dashboard
             </p>
             <div className="mt-6"><AdminSection title="Analytics & Content Health" id="analytics" description="Content completeness, stats, and issues to address"><AnalyticsDashboard siteData={siteData} /></AdminSection></div>
@@ -3713,7 +3730,7 @@ const AdminPage = () => {
 
           {/* ── CRM ─────────────────────────────────────────────────── */}
           <div className="mb-8">
-            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+            <p className="font-mono text-flamingo/70 text-[11px] tracking-editorial uppercase mb-5 flex items-center gap-2 admin-group-label w-fit">
               <span>👥</span> Guest CRM
             </p>
             <div className="mt-6"><AdminSection title="Guest CRM" id="crm" description="Manage guest relationships, dietary preferences, VIPs, and notes"><CRMPanel /></AdminSection></div>
@@ -3721,7 +3738,7 @@ const AdminPage = () => {
 
           {/* ── CONTENT ─────────────────────────────────────────────── */}
           <div className="mb-8">
-            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+            <p className="font-mono text-flamingo/70 text-[11px] tracking-editorial uppercase mb-5 flex items-center gap-2 admin-group-label w-fit">
               <span>📝</span> Content
             </p>
             <div className="mb-6"><AdminSection title="Site Settings" defaultOpen={true} id="settings" description="Passwords, preview mode, and visibility toggles"><SiteSettingsEditor /></AdminSection></div>
@@ -3735,7 +3752,7 @@ const AdminPage = () => {
 
           {/* ── OPERATIONS ──────────────────────────────────────────── */}
           <div className="mb-8">
-            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+            <p className="font-mono text-flamingo/70 text-[11px] tracking-editorial uppercase mb-5 flex items-center gap-2 admin-group-label w-fit">
               <span>🕐</span> Operations
             </p>
             <div className="mt-6"><AdminSection title="Hours" id="hours" description="Regular hours and temporary overrides"><HoursEditor /></AdminSection></div>
@@ -3746,7 +3763,7 @@ const AdminPage = () => {
 
           {/* ── COMMERCE ────────────────────────────────────────────── */}
           <div className="mb-8">
-            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+            <p className="font-mono text-flamingo/70 text-[11px] tracking-editorial uppercase mb-5 flex items-center gap-2 admin-group-label w-fit">
               <span>🛒</span> Commerce
             </p>
             <div className="mt-6"><AdminSection title="Events &amp; Tickets" id="events" badge={(siteData.events || []).length} description="Ticketed events, wine dinners, and special nights"><EventsEditor /></AdminSection></div>
@@ -3759,7 +3776,7 @@ const AdminPage = () => {
 
           {/* ── MEDIA ───────────────────────────────────────────────── */}
           <div className="mb-8">
-            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+            <p className="font-mono text-flamingo/70 text-[11px] tracking-editorial uppercase mb-5 flex items-center gap-2 admin-group-label w-fit">
               <span>📷</span> Media
             </p>
             <div className="mt-6"><AdminSection title="Gallery" id="gallery" badge={(siteData.gallery || []).length} description="Photo gallery displayed on the gallery page"><GalleryEditor /></AdminSection></div>
@@ -3772,7 +3789,7 @@ const AdminPage = () => {
 
           {/* ── MARKETING ───────────────────────────────────────────── */}
           <div className="mb-8">
-            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+            <p className="font-mono text-flamingo/70 text-[11px] tracking-editorial uppercase mb-5 flex items-center gap-2 admin-group-label w-fit">
               <span>📣</span> Marketing
             </p>
             <div className="mt-6"><AdminSection title="Email Marketing" id="email" description="Email campaign settings and templates"><EmailMarketingEditor /></AdminSection></div>
@@ -3783,7 +3800,7 @@ const AdminPage = () => {
 
           {/* ── INTEGRATIONS ─────────────────────────────────────────── */}
           <div className="mb-8">
-            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+            <p className="font-mono text-flamingo/70 text-[11px] tracking-editorial uppercase mb-5 flex items-center gap-2 admin-group-label w-fit">
               <span>🔌</span> Integrations
             </p>
             <div className="mt-6"><AdminSection title="Resy & Toast" id="integrations" description="Connect Resy reservations and Toast POS for live availability, ordering, and gift cards"><IntegrationsPanel siteData={siteData} updateData={updateData} saveWithToast={saveWithToast} /></AdminSection></div>
@@ -3791,7 +3808,7 @@ const AdminPage = () => {
 
           {/* ── SETTINGS ────────────────────────────────────────────── */}
           <div className="mb-8">
-            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+            <p className="font-mono text-flamingo/70 text-[11px] tracking-editorial uppercase mb-5 flex items-center gap-2 admin-group-label w-fit">
               <span>⚙️</span> Settings
             </p>
             <div className="mt-6"><AdminSection title="External Links" id="links" description="Resy, DoorDash, Toast, Instagram, and other URLs"><LinksEditor /></AdminSection></div>
@@ -3799,8 +3816,8 @@ const AdminPage = () => {
           </div>
 
           {/* Storage status + Reset to Defaults */}
-          <div className="mt-12 border border-flamingo border-opacity-30 rounded-lg p-6">
-            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-2">Storage Status</p>
+          <div className="mt-12 border border-flamingo/20 rounded-2xl p-7 bg-white shadow-admin">
+            <p className="font-mono text-flamingo/60 text-xs tracking-editorial uppercase mb-3">Storage Status</p>
             <p className="font-body text-sm text-navy opacity-60 leading-relaxed mb-2">
               {dbLoading
                 ? "⏳ Connecting to Supabase..."
@@ -3937,8 +3954,8 @@ const AdminPage = () => {
         <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
           <button
             onClick={undo}
-            className="flex items-center gap-2 bg-navy text-cream font-body text-sm px-5 py-3
-                       rounded-lg shadow-xl hover:bg-flamingo transition-colors"
+            className="flex items-center gap-2 bg-navy/90 backdrop-blur-sm text-cream font-body text-sm px-5 py-3
+                       rounded-2xl shadow-admin-lg hover:bg-flamingo hover:scale-105 transition-all duration-200"
           >
             <Undo2 size={16} /> Undo Last Save
           </button>

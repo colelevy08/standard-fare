@@ -4,7 +4,7 @@
     {
       "name": "standard-fare",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["start"],
+      "runtimeArgs": ["--prefix", "/Users/colelevy/Desktop/Development/standard-fare", "start"],
       "port": 3000
     }
   ]

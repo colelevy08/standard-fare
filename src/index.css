@@ -20,8 +20,131 @@
   .section-padding { @apply py-20 md:py-28; }
   .section-divider { @apply block w-16 h-px bg-flamingo mx-auto mt-4 mb-10; }
   .card { @apply bg-cream-warm rounded shadow-md overflow-hidden transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl; }
-  .form-input { @apply w-full px-4 py-3 border border-navy border-opacity-20 bg-white text-navy font-body focus:outline-none focus:ring-2 focus:ring-flamingo transition-all; }
-  .admin-card { @apply bg-white rounded-lg shadow p-6 mb-6; }
+  .form-input { @apply w-full px-4 py-3 rounded-lg border border-navy border-opacity-15 bg-white text-navy font-body
+    focus:outline-none focus:ring-2 focus:ring-flamingo focus:ring-opacity-30 focus:border-flamingo
+    transition-all duration-200 placeholder:text-navy placeholder:opacity-25; }
+  .admin-card { @apply bg-white rounded-2xl shadow-sm border border-navy border-opacity-[0.06] p-7 mb-6
+    transition-shadow duration-300 hover:shadow-md; }
+}
+
+/* ── Admin-specific visual enhancements ──────────────────────────────────── */
+
+/* Subtle gradient line under admin section headers when expanded */
+.admin-card > button[aria-expanded="true"] {
+  position: relative;
+}
+.admin-card > button[aria-expanded="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #E8748A 0%, #C5A55A 50%, #E8748A 100%);
+  opacity: 0.4;
+  border-radius: 1px;
+}
+
+/* Glass morphism for the quick-jump sidebar */
+.admin-sidebar-glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Admin input focus glow */
+.form-input:focus {
+  box-shadow: 0 0 0 3px rgba(232, 116, 138, 0.12), 0 1px 3px rgba(27, 43, 75, 0.08);
+}
+
+/* Smooth expand/collapse for collapsible items */
+.admin-collapse-enter {
+  animation: adminCollapseIn 0.25s ease-out;
+}
+@keyframes adminCollapseIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Admin stat cards — subtle hover lift */
+.admin-stat-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.admin-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(27, 43, 75, 0.08);
+}
+
+/* Admin group header pill */
+.admin-group-label {
+  background: linear-gradient(135deg, rgba(27, 43, 75, 0.04) 0%, rgba(27, 43, 75, 0.02) 100%);
+  border: 1px solid rgba(27, 43, 75, 0.06);
+  border-radius: 12px;
+  padding: 12px 20px;
+}
+
+/* Refined checkbox styling */
+input[type="checkbox"].accent-flamingo {
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+input[type="checkbox"].accent-flamingo:hover {
+  box-shadow: 0 0 0 3px rgba(232, 116, 138, 0.15);
+}
+
+/* Tag pill hover effect */
+.admin-tag-pill {
+  transition: all 0.15s ease;
+}
+.admin-tag-pill:hover {
+  transform: scale(1.05);
+}
+
+/* Admin hero banner gradient */
+.admin-hero-gradient {
+  background: linear-gradient(180deg, #1B2B4B 0%, #2D4170 60%, #1B2B4B 100%);
+}
+
+/* Subtle pattern overlay for admin sections */
+.admin-pattern-bg {
+  background-image: radial-gradient(circle at 25px 25px, rgba(27, 43, 75, 0.015) 2px, transparent 0);
+  background-size: 50px 50px;
+}
+
+/* Refined select dropdowns */
+select.form-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231B2B4B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+/* Admin save button pulse on hover */
+.admin-save-btn {
+  position: relative;
+  overflow: hidden;
+}
+.admin-save-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.admin-save-btn:hover::before {
+  opacity: 1;
+}
+
+/* Smooth transitions for admin section borders */
+.admin-section-border {
+  border-left: 3px solid transparent;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+.admin-section-border:hover {
+  border-left-color: rgba(232, 116, 138, 0.3);
 }
 
 @layer utilities {
