@@ -5,9 +5,40 @@
 //
 // SETUP: Set RESEND_API_KEY in Vercel environment variables.
 //        Get your key from https://resend.com/api-keys
+//
+// RATE LIMIT: 5 submissions per minute per IP to prevent spam/abuse.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const FALLBACK_TO = "colelevy08@gmail.com";
+
+// ── Simple in-memory rate limiter (per serverless instance) ─────────────────
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60_000; // 1 minute
+const RATE_LIMIT_MAX    = 5;      // contact form submissions per window
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+  if (!record) {
+    rateLimitMap.set(ip, { count: 1, start: now });
+    return false;
+  }
+  if (now - record.start > RATE_LIMIT_WINDOW) {
+    rateLimitMap.set(ip, { count: 1, start: now });
+    return false;
+  }
+  record.count++;
+  if (record.count > RATE_LIMIT_MAX) return true;
+  return false;
+}
+
+// Periodically clean stale entries to prevent memory leak
+setInterval(() => {
+  const cutoff = Date.now() - RATE_LIMIT_WINDOW * 2;
+  for (const [ip, record] of rateLimitMap) {
+    if (record.start < cutoff) rateLimitMap.delete(ip);
+  }
+}, RATE_LIMIT_WINDOW * 2);
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -15,6 +46,13 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  // Rate limit by IP
+  const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || "unknown";
+  if (isRateLimited(ip)) {
+    res.setHeader("Retry-After", "60");
+    return res.status(429).json({ error: "Too many submissions. Please try again in a minute." });
+  }
 
   const { name, email, department, subject, message, toEmail } = req.body;
 

@@ -219,6 +219,10 @@ export const AdminProvider = ({ children }) => {
 
   useEffect(() => { loadFromSupabase(); }, [loadFromSupabase]);
 
+  // ── Save status — exposed so UI can show feedback ───────────────────────
+  const [saveStatus, setSaveStatus] = useState(null); // null | "saving" | "saved" | "error"
+  const [lastSavedAt, setLastSavedAt] = useState(null); // Date
+
   // ── updateData ────────────────────────────────────────────────────────────
   const updateData = async (section, value) => {
     // Snapshot for undo (1 level)
@@ -232,18 +236,28 @@ export const AdminProvider = ({ children }) => {
     // In draft mode, only save locally — don't push to Supabase until publish
     if (draftMode) {
       setHasDraft(true);
+      setSaveStatus("saved");
+      setLastSavedAt(new Date());
       return;
     }
 
     if (supabase) {
+      setSaveStatus("saving");
       try {
         const { error } = await supabase
           .from(SUPABASE_TABLE)
           .upsert({ id: SUPABASE_ROW, content: updated }, { onConflict: "id" });
         if (error) throw new Error(error.message);
+        setSaveStatus("saved");
+        setLastSavedAt(new Date());
       } catch (e) {
         console.warn("Supabase save failed:", e.message);
+        setSaveStatus("error");
+        // Data is still in localStorage — flag the error but don't lose data
       }
+    } else {
+      setSaveStatus("saved");
+      setLastSavedAt(new Date());
     }
   };
 
@@ -319,6 +333,7 @@ export const AdminProvider = ({ children }) => {
       retrySupabase: loadFromSupabase,
       canUndo, undo,
       draftMode, setDraftMode, hasDraft, publishDraft, discardDraft,
+      saveStatus, lastSavedAt,
     }}>
       {children}
     </AdminContext.Provider>

@@ -19,9 +19,9 @@
 // All changes are saved to localStorage via AdminContext.updateData().
 // ─────────────────────────────────────────────────────────────────────────────
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Plus, Trash2, Save, ChevronDown, ChevronUp, Undo2, GripVertical, RefreshCw, Eye, Copy } from "lucide-react";
+import { LogOut, Plus, Trash2, Save, ChevronDown, ChevronUp, Undo2, GripVertical, RefreshCw, Eye, Copy, Search, X, ChevronRight, ArrowUp, Check, AlertCircle } from "lucide-react";
 import { useSite } from "../context/AdminContext";
 import PageLayout from "../components/layout/PageLayout";
 import ImageUploader from "../components/ui/ImageUploader";
@@ -57,23 +57,218 @@ const SortableItem = ({ id, children }) => {
   );
 };
 
+// ── Save Toast — shows success/error feedback after saves ──────────────
+const SaveToast = ({ message, type = "success", onDismiss }) => {
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, 3000);
+    return () => clearTimeout(timer);
+  }, [onDismiss]);
+  return (
+    <div role="status" aria-live="polite" className={`fixed bottom-20 right-6 z-[60] animate-fade-in flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl font-body text-sm
+      ${type === "success" ? "bg-green-700 text-white" : "bg-red-600 text-white"}`}>
+      {type === "success" ? <Check size={15} /> : <AlertCircle size={15} />}
+      {message}
+    </div>
+  );
+};
+
+// ── Delete Confirmation Dialog ────────────────────────────────────────
+const ConfirmDelete = ({ itemName, onConfirm, onCancel }) => {
+  // Auto-focus the cancel button and support Escape/Enter
+  const cancelRef = useRef(null);
+  useEffect(() => { cancelRef.current?.focus(); }, []);
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onCancel(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onCancel]);
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-40 animate-fade-in" onClick={onCancel} role="dialog" aria-modal="true" aria-label={`Delete ${itemName}`}>
+      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm mx-4" onClick={e => e.stopPropagation()}>
+        <p className="font-display text-navy text-lg mb-2">Delete {itemName}?</p>
+        <p className="font-body text-sm text-navy opacity-60 mb-5">This action cannot be undone.</p>
+        <div className="flex gap-3 justify-end">
+          <button ref={cancelRef} onClick={onCancel} className="font-body text-sm text-navy opacity-50 hover:opacity-80 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-flamingo focus:ring-opacity-40">Cancel</button>
+          <button onClick={onConfirm} className="font-body text-sm bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400">Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Scroll-to-top button ──────────────────────────────────────────────
+const ScrollToTop = () => {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShow(window.scrollY > 600);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  if (!show) return null;
+  return (
+    <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      className="fixed bottom-6 left-6 z-50 w-10 h-10 bg-navy text-cream rounded-full shadow-xl
+        flex items-center justify-center hover:bg-flamingo transition-colors" title="Scroll to top">
+      <ArrowUp size={18} />
+    </button>
+  );
+};
+
+// ── Section definitions for grouping + quick-jump ─────────────────────
+const SECTION_GROUPS = [
+  { group: "Content", icon: "📝", sections: [
+    { id: "hero", title: "Hero — Text, Buttons & Slideshow" },
+    { id: "about", title: "Our Story & Team" },
+    { id: "weekly", title: "Weekly Features" },
+    { id: "menus", title: "Menus" },
+    { id: "blog", title: "Blog — From the Kitchen" },
+    { id: "faq", title: "FAQ" },
+  ]},
+  { group: "Operations", icon: "🕐", sections: [
+    { id: "hours", title: "Hours" },
+    { id: "location", title: "Location & Map" },
+    { id: "specials", title: "Daily Specials" },
+    { id: "countdown", title: "Seasonal Menu Countdown" },
+  ]},
+  { group: "Commerce", icon: "🛒", sections: [
+    { id: "events", title: "Events & Tickets" },
+    { id: "paintings", title: "Paintings" },
+    { id: "merch", title: "Merchandise" },
+    { id: "bottles", title: "Bottle Shop" },
+    { id: "giftcards", title: "Gift Cards" },
+    { id: "privateevents", title: "Private Events" },
+  ]},
+  { group: "Media", icon: "📷", sections: [
+    { id: "gallery", title: "Gallery" },
+    { id: "instagram", title: "Instagram Feed" },
+    { id: "stockphotos", title: "Stock Photos" },
+    { id: "testimonials", title: "Testimonials" },
+    { id: "press", title: "Press" },
+    { id: "popular", title: "Popular Now Badges" },
+  ]},
+  { group: "Marketing", icon: "📣", sections: [
+    { id: "email", title: "Email Marketing" },
+    { id: "sms", title: "SMS Text Club" },
+    { id: "newsletter", title: "Newsletter" },
+  ]},
+  { group: "Settings", icon: "⚙️", sections: [
+    { id: "settings", title: "Site Settings" },
+    { id: "links", title: "External Links" },
+    { id: "contact", title: "Contact Emails" },
+  ]},
+];
+const ALL_SECTIONS = SECTION_GROUPS.flatMap(g => g.sections);
+
+// ── Quick-Jump Sidebar ────────────────────────────────────────────────
+const QuickJump = ({ activeSection, onJump, searchQuery, onSearchChange }) => {
+  const filtered = searchQuery.trim()
+    ? SECTION_GROUPS.map(g => ({
+        ...g,
+        sections: g.sections.filter(s => s.title.toLowerCase().includes(searchQuery.toLowerCase()))
+      })).filter(g => g.sections.length > 0)
+    : SECTION_GROUPS;
+
+  return (
+    <div className="hidden xl:block fixed left-4 top-32 w-48 max-h-[calc(100vh-160px)] overflow-y-auto z-40
+      bg-white border border-navy border-opacity-10 rounded-xl shadow-lg p-3 text-xs">
+      {/* Search */}
+      <div className="relative mb-3">
+        <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-navy opacity-30" />
+        <input value={searchQuery} onChange={e => onSearchChange(e.target.value)}
+          className="w-full pl-7 pr-6 py-1.5 rounded-lg border border-navy border-opacity-15 font-body text-xs text-navy placeholder:text-navy placeholder:opacity-30"
+          placeholder="Jump to section..." />
+        {searchQuery && (
+          <button onClick={() => onSearchChange("")} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-navy opacity-30 hover:opacity-60">
+            <X size={11} />
+          </button>
+        )}
+      </div>
+      {filtered.map(g => (
+        <div key={g.group} className="mb-2">
+          <p className="font-mono text-[9px] tracking-editorial uppercase text-navy opacity-30 mb-1 px-1">{g.icon} {g.group}</p>
+          {g.sections.map(s => (
+            <button key={s.id} onClick={() => onJump(s.id)}
+              className={`w-full text-left px-2 py-1 rounded font-body text-[11px] truncate transition-colors focus:outline-none focus:ring-1 focus:ring-flamingo focus:ring-opacity-40
+                ${activeSection === s.id ? "bg-flamingo bg-opacity-10 text-flamingo font-semibold" : "text-navy opacity-60 hover:opacity-100 hover:bg-cream-warm"}`}>
+              {s.title.replace(" — ", " ")}
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ── Validation helpers ─────────────────────────────────────────────────
+const validateUrl = (v) => {
+  if (!v) return null;
+  try { new URL(v); return null; } catch { return "Enter a valid URL (https://...)"; }
+};
+const validateEmail = (v) => {
+  if (!v) return null;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? null : "Enter a valid email address";
+};
+const validatePrice = (v) => {
+  if (!v) return null;
+  return /^\d+(\.\d{1,2})?$/.test(v) ? null : "Enter a valid price (e.g. 17 or 17.50)";
+};
+const validateDate = (v) => {
+  if (!v) return null;
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) ? null : "Use YYYY-MM-DD format (e.g. 2026-04-12)";
+};
+const validatePhone = (v) => {
+  if (!v) return null;
+  const digits = v.replace(/\D/g, "");
+  return digits.length >= 10 ? null : "Enter a valid phone number";
+};
+
+// ── View on Site link ──────────────────────────────────────────────────
+const ViewOnSite = ({ path }) => (
+  <Link to={path} target="_blank" className="inline-flex items-center gap-1 font-mono text-[10px] tracking-editorial uppercase text-flamingo opacity-60 hover:opacity-100 transition-opacity">
+    <Eye size={11} /> View on site
+  </Link>
+);
+
+// ── Empty State ──────────────────────────────────────────────────────
+const EmptyState = ({ message, onAdd, addLabel }) => (
+  <div className="text-center py-8 border-2 border-dashed border-navy border-opacity-10 rounded-xl">
+    <p className="font-body text-sm text-navy opacity-35 mb-3">{message}</p>
+    {onAdd && (
+      <button onClick={onAdd} className="inline-flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark transition-colors">
+        <Plus size={14} />{addLabel || "Add First Item"}
+      </button>
+    )}
+  </div>
+);
+
 // ── Small utility components ───────────────────────────────────────────────
 
 // Section accordion header — click to expand/collapse an admin section
-const AdminSection = ({ title, children, defaultOpen = false }) => {
+const AdminSection = ({ title, children, defaultOpen = false, id, badge, description }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="admin-card border border-navy border-opacity-10">
+    <div className="admin-card border border-navy border-opacity-10" id={id ? `section-${id}` : undefined}>
       {/* Clickable header */}
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex justify-between items-center text-left"
+        aria-expanded={open}
+        aria-controls={id ? `content-${id}` : undefined}
       >
-        <h3 className="font-display text-navy text-lg">{title}</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="font-display text-navy text-lg">{title}</h3>
+          {badge != null && badge > 0 && (
+            <span className="font-mono text-[10px] bg-flamingo bg-opacity-15 text-flamingo px-2 py-0.5 rounded-full">{badge}</span>
+          )}
+        </div>
         {open ? <ChevronUp size={18} className="text-flamingo" /> : <ChevronDown size={18} className="text-navy opacity-40" />}
       </button>
+      {/* Description — visible even when collapsed */}
+      {description && !open && (
+        <p className="font-body text-xs text-navy opacity-35 mt-2 leading-relaxed">{description}</p>
+      )}
       {/* Collapsible content */}
-      {open && <div className="mt-6 border-t border-navy border-opacity-10 pt-6">{children}</div>}
+      {open && <div className="mt-6 border-t border-navy border-opacity-10 pt-6" id={id ? `content-${id}` : undefined} role="region">{children}</div>}
     </div>
   );
 };
@@ -81,14 +276,31 @@ const AdminSection = ({ title, children, defaultOpen = false }) => {
 // ── CollapsibleItem — wraps any card in a list editor with expand/collapse ──
 // Used in: Paintings, Gallery, Events, Press, Team, Hero Slides, etc.
 // defaultOpen=true for newly added items so the form is ready to fill in.
-const CollapsibleItem = ({ label, sublabel, defaultOpen = false, onRemove, children }) => {
+const CollapsibleItem = ({ label, sublabel, defaultOpen = false, onRemove, children, confirmDelete = true, thumbnail }) => {
   const [open, setOpen] = useState(defaultOpen);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const displayLabel = typeof label === "string" ? label : "this item";
   return (
-    <div className="border border-navy border-opacity-10 rounded-xl mb-3 overflow-hidden">
+    <div className={`border rounded-xl mb-3 overflow-hidden transition-colors ${open ? "border-flamingo border-opacity-30" : "border-navy border-opacity-10"}`}>
+      {showConfirm && (
+        <ConfirmDelete
+          itemName={typeof label === "string" ? `"${label}"` : "this item"}
+          onConfirm={() => { setShowConfirm(false); onRemove(); }}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
       {/* Header row — always visible */}
       <div className="flex items-center justify-between px-4 py-3 bg-cream-warm cursor-pointer select-none"
-        onClick={() => setOpen(!open)}>
+        onClick={() => setOpen(!open)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(!open); } }}
+      >
         <div className="flex items-center gap-3 min-w-0">
+          {/* Thumbnail preview */}
+          {thumbnail && !open && (
+            <img src={thumbnail} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 border border-navy border-opacity-10" />
+          )}
           {/* Chevron */}
           {open
             ? <ChevronUp size={15} className="text-flamingo flex-shrink-0" />
@@ -108,9 +320,10 @@ const CollapsibleItem = ({ label, sublabel, defaultOpen = false, onRemove, child
         {/* Remove button — stops propagation so clicking it doesn't toggle expand */}
         {onRemove && (
           <button
-            onClick={(e) => { e.stopPropagation(); onRemove(); }}
+            onClick={(e) => { e.stopPropagation(); confirmDelete ? setShowConfirm(true) : onRemove(); }}
             className="text-flamingo-dark hover:text-flamingo transition-colors flex-shrink-0 ml-3 p-1"
             title="Remove"
+            aria-label={`Remove ${displayLabel}`}
           >
             <Trash2 size={15} />
           </button>
@@ -127,45 +340,169 @@ const CollapsibleItem = ({ label, sublabel, defaultOpen = false, onRemove, child
 };
 
 
-const Field = ({ label, value, onChange, type = "text", multiline = false, placeholder = "" }) => (
-  <div className="mb-4">
-    <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-1">{label}</label>
-    {multiline ? (
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onPaste={(e) => {
-          setTimeout(() => onChange(e.target.value), 0);
-        }}
-        rows={4}
-        className="form-input text-base resize-y"
-        placeholder={placeholder}
-      />
-    ) : (
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onPaste={(e) => {
-          setTimeout(() => onChange(e.target.value), 0);
-        }}
-        className="form-input text-base"
-        placeholder={placeholder}
-      />
-    )}
-  </div>
-);
+const Field = ({ label, value, onChange, type = "text", multiline = false, placeholder = "", required = false, maxLength, validate, helpText }) => {
+  const fieldId = useMemo(() => `field-${label.replace(/\s+/g, "-").toLowerCase()}-${Math.random().toString(36).slice(2, 6)}`, [label]);
+  const strVal = value == null ? "" : String(value);
+  const error = validate ? validate(strVal) : null;
+  return (
+    <div className="mb-4">
+      <div className="flex items-center justify-between mb-1">
+        <label htmlFor={fieldId} className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50">
+          {label}{required && <span className="text-flamingo ml-1">*</span>}
+        </label>
+        {maxLength && (
+          <span className={`font-mono text-[10px] ${strVal.length > maxLength ? "text-red-500" : "text-navy opacity-25"}`}>
+            {strVal.length}/{maxLength}
+          </span>
+        )}
+      </div>
+      {multiline ? (
+        <textarea
+          id={fieldId}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onPaste={(e) => { setTimeout(() => onChange(e.target.value), 0); }}
+          rows={4}
+          className={`form-input text-base resize-y ${error ? "border-red-400" : ""}`}
+          placeholder={placeholder}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${fieldId}-error` : helpText ? `${fieldId}-help` : undefined}
+        />
+      ) : (
+        <input
+          id={fieldId}
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onPaste={(e) => { setTimeout(() => onChange(e.target.value), 0); }}
+          className={`form-input text-base ${error ? "border-red-400" : ""}`}
+          placeholder={placeholder}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${fieldId}-error` : helpText ? `${fieldId}-help` : undefined}
+        />
+      )}
+      {error && <p id={`${fieldId}-error`} className="font-body text-xs text-red-500 mt-1" role="alert">{error}</p>}
+      {helpText && !error && <p id={`${fieldId}-help`} className="font-body text-xs text-navy opacity-30 mt-1">{helpText}</p>}
+    </div>
+  );
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 const AdminPage = () => {
-  const { siteData, updateData, isAdmin, logout, dbReady, dbLoading, dbError, retrySupabase, canUndo, undo, draftMode, setDraftMode, hasDraft, publishDraft, discardDraft } = useSite();
+  const { siteData, updateData, isAdmin, logout, dbReady, dbLoading, dbError, retrySupabase, canUndo, undo, draftMode, setDraftMode, hasDraft, publishDraft, discardDraft, saveStatus, lastSavedAt } = useSite();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
   const navigate = useNavigate();
+
+  // ── Quick-jump sidebar state ──────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeSection, setActiveSection] = useState("");
+  const [toast, setToast] = useState(null); // { message, type }
+
+  // ── Wrap updateData to show save toast automatically ──────────────────
+  const saveWithToast = useCallback(async (key, value, label) => {
+    try {
+      await updateData(key, value);
+      setToast({ message: label ? `${label} saved!` : "Saved!", type: "success" });
+    } catch (err) {
+      setToast({ message: "Save failed — please try again.", type: "error" });
+    }
+  }, [updateData]);
+
+  // ── Track active section via IntersectionObserver ─────────────────────
+  useEffect(() => {
+    if (!isAdmin) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const id = entry.target.id?.replace("section-", "");
+            if (id) setActiveSection(id);
+          }
+        }
+      },
+      { rootMargin: "-20% 0px -60% 0px", threshold: 0 }
+    );
+    // Defer so DOM elements exist after render
+    const timer = setTimeout(() => {
+      ALL_SECTIONS.forEach((s) => {
+        const el = document.getElementById(`section-${s.id}`);
+        if (el) observer.observe(el);
+      });
+    }, 500);
+    return () => { clearTimeout(timer); observer.disconnect(); };
+  }, [isAdmin]);
+
+  // ── Keyboard shortcuts ────────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      // Cmd+S / Ctrl+S — click the nearest visible Save button
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        const saveBtn = document.querySelector("button.btn-primary");
+        if (saveBtn) {
+          saveBtn.click();
+          setToast({ message: "Saved!", type: "success" });
+        }
+      }
+      // Cmd+Z / Ctrl+Z — undo last save
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && canUndo) {
+        e.preventDefault();
+        undo();
+        setToast({ message: "Undone!", type: "success" });
+      }
+      // Escape — close any open ConfirmDelete dialog
+      if (e.key === "Escape") {
+        const overlay = document.querySelector(".fixed.inset-0.z-\\[70\\]");
+        if (overlay) overlay.click(); // triggers onCancel via overlay click handler
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  // ── Warn before leaving with unsaved changes ──────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      if (saveStatus === "saving") {
+        e.preventDefault();
+        e.returnValue = "Changes are still saving — are you sure you want to leave?";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [saveStatus]);
+
+  // ── Collapse All / Expand All ──────────────────────────────────────
+  const [allCollapsed, setAllCollapsed] = useState(true);
+  const toggleAllSections = useCallback(() => {
+    // Find all admin-card toggle buttons and click them to match target state
+    const buttons = document.querySelectorAll(".admin-card > button[aria-expanded]");
+    buttons.forEach((btn) => {
+      const isOpen = btn.getAttribute("aria-expanded") === "true";
+      if (allCollapsed ? isOpen : !isOpen) btn.click();
+    });
+    setAllCollapsed(!allCollapsed);
+  }, [allCollapsed]);
+
+  // ── Quick-jump scroll handler ────────────────────────────────────────
+  const handleJump = useCallback((id) => {
+    const el = document.getElementById(`section-${id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      setActiveSection(id);
+    }
+  }, []);
+
+  // Set page title for admin
+  useEffect(() => {
+    document.title = "Manage Website — Standard Fare";
+    return () => { document.title = "Standard Fare"; };
+  }, []);
 
   // Redirect non-admin users back to home (protects the route)
   useEffect(() => {
@@ -187,7 +524,7 @@ const AdminPage = () => {
     );
 
     // Save both story fields and team array together
-    const save = () => updateData("about", { ...draft, team });
+    const save = () => saveWithToast("about", { ...draft, team }, "About");
 
     const updateMember = (i, field, value) =>
       setTeam(team.map((m, idx) => idx === i ? { ...m, [field]: value } : m));
@@ -207,12 +544,15 @@ const AdminPage = () => {
             value={draft.heading || ""}
             onChange={(v) => setDraft({ ...draft, heading: v })}
             placeholder="Creative American Dining"
+            maxLength={60}
           />
           <Field
             label="Body Copy — type 'Bocage Champagne Bar' to auto-hyperlink it"
             value={draft.body || ""}
             onChange={(v) => setDraft({ ...draft, body: v })}
             multiline
+            maxLength={600}
+            helpText="This text appears in the 'Our Story' section. Mentioning 'Bocage Champagne Bar' automatically hyperlinks it."
           />
 
           <div className="border border-flamingo border-opacity-20 rounded-xl p-5 bg-flamingo bg-opacity-5 mb-4">
@@ -324,8 +664,8 @@ const AdminPage = () => {
       setHours(updated);
     };
 
-    const save = () => updateData("hours", hours);
-    const saveOverride = () => updateData("hoursOverride", override);
+    const save = () => saveWithToast("hours", hours, "Hours");
+    const saveOverride = () => saveWithToast("hoursOverride", override, "Hours override");
 
     return (
       <div>
@@ -383,6 +723,27 @@ const AdminPage = () => {
                   placeholder="9:00 PM" className="form-input text-base py-2" />
               </div>
             </div>
+            {/* Quick set buttons */}
+            <div className="flex gap-2 mt-3 flex-wrap">
+              <button type="button" onClick={() => { setHour(i, "open", "Closed"); setHour(i, "close", ""); }}
+                className="font-mono text-[10px] text-navy opacity-30 hover:opacity-60 border border-navy border-opacity-15 rounded px-2 py-1 transition-opacity">
+                Set Closed
+              </button>
+              <button type="button" onClick={() => { setHour(i, "open", "5:00 PM"); setHour(i, "close", "10:00 PM"); }}
+                className="font-mono text-[10px] text-navy opacity-30 hover:opacity-60 border border-navy border-opacity-15 rounded px-2 py-1 transition-opacity">
+                Dinner Only
+              </button>
+              <button type="button" onClick={() => { setHour(i, "open", "10:00 AM"); setHour(i, "close", "10:00 PM"); }}
+                className="font-mono text-[10px] text-navy opacity-30 hover:opacity-60 border border-navy border-opacity-15 rounded px-2 py-1 transition-opacity">
+                Brunch + Dinner
+              </button>
+              {i > 0 && (
+                <button type="button" onClick={() => { setHour(i, "open", hours[i - 1].open); setHour(i, "close", hours[i - 1].close); }}
+                  className="font-mono text-[10px] text-flamingo opacity-40 hover:opacity-70 transition-opacity">
+                  Copy from {hours[i - 1].day}
+                </button>
+              )}
+            </div>
           </CollapsibleItem>
         ))}
         <button onClick={save} className="btn-primary flex items-center gap-2 mt-4"><Save size={14} />Save Hours</button>
@@ -395,7 +756,7 @@ const AdminPage = () => {
   // ───────────────────────────────────────────────────────────────────────────
   const LocationEditor = () => {
     const [loc, setLoc] = useState({ ...siteData.location });
-    const save = () => updateData("location", loc);
+    const save = () => saveWithToast("location", loc, "Location");
 
     const labels = {
       address:       "Street Address",
@@ -420,6 +781,8 @@ const AdminPage = () => {
               value={val}
               onChange={(v) => setLoc({ ...loc, [key]: v })}
               multiline={key === "mapEmbedUrl"}
+              validate={key === "email" ? validateEmail : key === "phone" ? validatePhone : key.includes("Url") ? validateUrl : undefined}
+              helpText={key === "mapEmbedUrl" ? "Paste the 'src' value from Google Maps embed code" : key === "googleMapsUrl" ? "The URL visitors see when they click 'View on Google Maps'" : undefined}
             />
           </CollapsibleItem>
         ))}
@@ -434,6 +797,7 @@ const AdminPage = () => {
   const MenuEditor = () => {
     const [menus, setMenus] = useState(JSON.parse(JSON.stringify(siteData.menus))); // Deep clone
     const [activeMenu, setActiveMenu] = useState("dinner");
+    const [menuSearch, setMenuSearch] = useState("");
 
     // Update a single item's field within a section
     const updateItem = (sectionIdx, itemIdx, field, value) => {
@@ -463,7 +827,7 @@ const AdminPage = () => {
       setMenus(m);
     };
 
-    const save = () => updateData("menus", menus);
+    const save = () => saveWithToast("menus", menus, "Menus");
 
     return (
       <div>
@@ -489,12 +853,40 @@ const AdminPage = () => {
           placeholder="Served Saturday & Sunday..."
         />
 
-        {/* Sections and items */}
-        {menus[activeMenu].sections.map((section, si) => (
-          <div key={si} className="mb-8 border border-navy border-opacity-10 rounded p-5">
-            <h4 className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4">{section.title}</h4>
+        {/* Search within menu items */}
+        <div className="relative mb-4">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-navy opacity-30" />
+          <input
+            value={menuSearch}
+            onChange={(e) => setMenuSearch(e.target.value)}
+            className="w-full pl-9 pr-8 py-2 rounded-lg border border-navy border-opacity-15 font-body text-sm text-navy placeholder:text-navy placeholder:opacity-30"
+            placeholder="Search menu items..."
+          />
+          {menuSearch && (
+            <button onClick={() => setMenuSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-navy opacity-30 hover:opacity-60">
+              <X size={14} />
+            </button>
+          )}
+        </div>
 
-            {section.items.map((item, ii) => (
+        {/* Sections and items */}
+        {menus[activeMenu].sections.map((section, si) => {
+          const filteredItems = menuSearch
+            ? section.items.map((item, ii) => ({ ...item, _idx: ii })).filter(item =>
+                item.name.toLowerCase().includes(menuSearch.toLowerCase()) ||
+                (item.description || "").toLowerCase().includes(menuSearch.toLowerCase()))
+            : section.items.map((item, ii) => ({ ...item, _idx: ii }));
+          if (menuSearch && filteredItems.length === 0) return null;
+          return (
+          <div key={si} className="mb-8 border border-navy border-opacity-10 rounded p-5">
+            <h4 className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4">
+              {section.title}
+              <span className="ml-2 font-mono text-[10px] text-navy opacity-30">{section.items.length} items</span>
+            </h4>
+
+            {filteredItems.map((item) => {
+              const ii = item._idx;
+              return (
               <CollapsibleItem
                 key={ii}
                 label={item.name || "Untitled dish"}
@@ -540,14 +932,16 @@ const AdminPage = () => {
                   </div>
                 </div>
               </CollapsibleItem>
-            ))}
+            );
+            })}
 
             {/* Add new item to this section */}
             <button onClick={() => addItem(si)} className="flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark transition-colors mt-2">
               <Plus size={14} /> Add Item
             </button>
           </div>
-        ))}
+          );
+        })}
 
         <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Menus</button>
       </div>
@@ -582,6 +976,7 @@ const AdminPage = () => {
     const save = async () => {
       await updateData("heroContent", hero);
       await updateData("heroSlides",  slides);
+      setToast({ message: "Hero saved!", type: "success" });
     };
 
     return (
@@ -650,6 +1045,7 @@ const AdminPage = () => {
   // ───────────────────────────────────────────────────────────────────────────
   const GalleryEditor = () => {
     const [photos, setPhotos] = useState([...siteData.gallery]);
+    const [gallerySearch, setGallerySearch] = useState("");
 
     const update = (i, field, value) => {
       const updated = photos.map((p, idx) => idx === i ? { ...p, [field]: value } : p);
@@ -661,7 +1057,7 @@ const AdminPage = () => {
     }]);
 
     const remove = (i) => setPhotos(photos.filter((_, idx) => idx !== i));
-    const save   = () => updateData("gallery", photos);
+    const save   = () => saveWithToast("gallery", photos, "Gallery");
 
     const handleDragEnd = (event) => {
       const { active, over } = event;
@@ -674,6 +1070,10 @@ const AdminPage = () => {
 
     return (
       <div>
+        <div className="flex items-center justify-between mb-4">
+          <p className="font-body text-sm text-navy opacity-60">{photos.length} photo{photos.length !== 1 ? "s" : ""} in gallery</p>
+          <ViewOnSite path="/gallery" />
+        </div>
         <div className="bg-navy rounded-lg p-5 mb-6">
           <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-2">Media Types Supported</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
@@ -696,12 +1096,28 @@ const AdminPage = () => {
           </p>
         </div>
 
+        {/* Gallery search */}
+        {photos.length > 5 && (
+          <div className="relative mb-4">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-navy opacity-30" />
+            <input value={gallerySearch} onChange={(e) => setGallerySearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 rounded-lg border border-navy border-opacity-15 font-body text-sm text-navy placeholder:text-navy placeholder:opacity-30"
+              placeholder="Search gallery items..." />
+            {gallerySearch && (
+              <button onClick={() => setGallerySearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-navy opacity-30 hover:opacity-60"><X size={14} /></button>
+            )}
+          </div>
+        )}
+
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={photos.map((p) => p.id)} strategy={verticalListSortingStrategy}>
-        {photos.map((photo, i) => (
+        {photos.map((photo, i) => {
+          if (gallerySearch && !(photo.alt?.toLowerCase().includes(gallerySearch.toLowerCase()) || photo.comment?.toLowerCase().includes(gallerySearch.toLowerCase()) || photo.caption?.toLowerCase().includes(gallerySearch.toLowerCase()))) return null;
+          return (
           <SortableItem key={photo.id} id={photo.id}>
           <CollapsibleItem
             label={photo.alt || photo.caption || `Gallery Item ${i + 1}`}
+            thumbnail={photo.url && (photo.mediaType || "image") !== "video" ? photo.url : undefined}
             sublabel={photo.url ? `✓ ${photo.mediaType || "image"}${photo.instagramUrl ? " · Instagram linked" : ""}` : "No media yet"}
             defaultOpen={!photo.url}
             onRemove={() => remove(i)}
@@ -769,9 +1185,14 @@ const AdminPage = () => {
                 placeholder="Comment shown beneath the photo (optional)"
               />
             </div>
+            <button onClick={() => setPhotos([...photos, { ...photo, id: Date.now(), alt: (photo.alt || "") + " (copy)" }])}
+              className="mt-3 flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+              <Copy size={12} /> Duplicate Item
+            </button>
           </CollapsibleItem>
           </SortableItem>
-        ))}
+        );
+        })}
         </SortableContext>
         </DndContext>
 
@@ -792,6 +1213,8 @@ const AdminPage = () => {
   // ───────────────────────────────────────────────────────────────────────────
   const EventsEditor = () => {
     const [events, setEvents] = useState(JSON.parse(JSON.stringify(siteData.events)));
+    const [eventSearch, setEventSearch] = useState("");
+    const [eventFilter, setEventFilter] = useState("all"); // all | upcoming | past
 
     const update = (i, field, value) => {
       setEvents(events.map((e, idx) => idx === i ? { ...e, [field]: value } : e));
@@ -802,9 +1225,14 @@ const AdminPage = () => {
       price: 0, capacity: null, venue: "standard-fare", imageUrl: "", toastProductId: null, ticketUrl: ""
     }]);
 
+    const duplicate = (i) => {
+      const src = events[i];
+      setEvents([...events, { ...src, id: Date.now(), title: src.title + " (copy)" }]);
+    };
+
     const remove = (i) => setEvents(events.filter((_, idx) => idx !== i));
 
-    const save = () => updateData("events", events);
+    const save = () => saveWithToast("events", events, "Events");
 
     const handleDragEnd = (event) => {
       const { active, over } = event;
@@ -815,14 +1243,73 @@ const AdminPage = () => {
       }
     };
 
+    const now = new Date();
+    const upcomingCount = events.filter(e => e.date && new Date(e.date + "T23:59:59") >= now).length;
+    const pastCount = events.filter(e => e.date && new Date(e.date + "T23:59:59") < now).length;
+
+    const filteredEvents = events
+      .map((ev, i) => ({ ...ev, _origIdx: i }))
+      .filter(ev => {
+        if (eventSearch) {
+          const q = eventSearch.toLowerCase();
+          if (!(ev.title?.toLowerCase().includes(q) || ev.description?.toLowerCase().includes(q) || ev.venue?.toLowerCase().includes(q))) return false;
+        }
+        if (eventFilter === "upcoming") return !ev.date || new Date(ev.date + "T23:59:59") >= now;
+        if (eventFilter === "past") return ev.date && new Date(ev.date + "T23:59:59") < now;
+        return true;
+      });
+
     return (
       <div>
+        <div className="flex items-center justify-between mb-4">
+          <p className="font-body text-sm text-navy opacity-60">Manage ticketed events, wine dinners, and special nights.</p>
+          <ViewOnSite path="/events" />
+        </div>
+
+        {/* Event stats */}
+        {events.length > 0 && (
+          <div className="flex gap-4 mb-4 flex-wrap items-center">
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40">{events.length} total</span>
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-green-700 opacity-60">{upcomingCount} upcoming</span>
+            {pastCount > 0 && <span className="font-mono text-[10px] tracking-editorial uppercase text-amber-600 opacity-60">{pastCount} past</span>}
+            <div className="flex gap-1 ml-auto">
+              {["all", "upcoming", "past"].map(f => (
+                <button key={f} onClick={() => setEventFilter(f)}
+                  className={`font-mono text-[10px] tracking-editorial uppercase px-2 py-1 rounded transition-colors
+                    ${eventFilter === f ? "bg-navy text-cream" : "text-navy opacity-40 hover:opacity-70"}`}>
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Event search */}
+        {events.length > 3 && (
+          <div className="relative mb-4">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-navy opacity-30" />
+            <input value={eventSearch} onChange={(e) => setEventSearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 rounded-lg border border-navy border-opacity-15 font-body text-sm text-navy placeholder:text-navy placeholder:opacity-30"
+              placeholder="Search events..." />
+            {eventSearch && (
+              <button onClick={() => setEventSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-navy opacity-30 hover:opacity-60"><X size={14} /></button>
+            )}
+          </div>
+        )}
+
+        {events.length === 0 ? (
+          <EmptyState message="No events yet" onAdd={add} addLabel="Add First Event" />
+        ) : (
+        <>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={events.map((e) => e.id)} strategy={verticalListSortingStrategy}>
-        {events.map((ev, i) => (
+        {filteredEvents.map((ev) => {
+          const i = ev._origIdx;
+          return (
           <SortableItem key={ev.id} id={ev.id}>
           <CollapsibleItem
             label={ev.title || "New Event"}
+            thumbnail={ev.imageUrl}
             sublabel={(() => {
               const isPast = ev.date && new Date(ev.date + "T23:59:59") < new Date();
               const parts = [];
@@ -836,7 +1323,7 @@ const AdminPage = () => {
             onRemove={() => remove(i)}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Title" value={ev.title} onChange={(v) => update(i, "title", v)} />
+              <Field label="Title" value={ev.title} onChange={(v) => update(i, "title", v)} required maxLength={80} />
               <div className="mb-4">
                 <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-1">Venue</label>
                 <select value={ev.venue || "standard-fare"} onChange={(e) => update(i, "venue", e.target.value)}
@@ -845,29 +1332,50 @@ const AdminPage = () => {
                   <option value="bocage">Bocage Champagne Bar</option>
                 </select>
               </div>
-              <Field label="Date (YYYY-MM-DD)" value={ev.date} onChange={(v) => update(i, "date", v)} placeholder="2026-04-12" />
+              <Field label="Date (YYYY-MM-DD)" value={ev.date} onChange={(v) => update(i, "date", v)} placeholder="2026-04-12" validate={validateDate} />
               <Field label="Time" value={ev.time} onChange={(v) => update(i, "time", v)} placeholder="6:30 PM – 9:00 PM" />
               <Field label="Price ($)" value={String(ev.price)} onChange={(v) => update(i, "price", Number(v))} type="number" />
               <Field label="Capacity (leave blank for unlimited)" value={ev.capacity || ""} onChange={(v) => update(i, "capacity", v ? Number(v) : null)} />
-              <Field label="Ticket Fallback URL" value={ev.ticketUrl} onChange={(v) => update(i, "ticketUrl", v)} placeholder="https://order.toasttab.com/..." />
+              <Field label="Ticket Fallback URL" value={ev.ticketUrl} onChange={(v) => update(i, "ticketUrl", v)} placeholder="https://order.toasttab.com/..." validate={validateUrl} />
               <Field label="Toast Product ID (see README-TOAST.md)" value={ev.toastProductId || ""} onChange={(v) => update(i, "toastProductId", v || null)} placeholder="TOAST-PROD-ID" />
             </div>
-            <Field label="Description" value={ev.description} onChange={(v) => update(i, "description", v)} multiline />
+            <Field label="Description" value={ev.description} onChange={(v) => update(i, "description", v)} multiline maxLength={500} helpText="Appears on the event detail page. Keep it concise." />
             <ImageUploader
               label="Event Photo"
               value={ev.imageUrl}
               onChange={(v) => update(i, "imageUrl", v)}
               height="h-40"
             />
+            <button onClick={() => duplicate(i)}
+              className="mt-3 flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+              <Copy size={12} /> Duplicate Event
+            </button>
           </CollapsibleItem>
           </SortableItem>
-        ))}
+        );
+        })}
         </SortableContext>
         </DndContext>
-        <div className="flex gap-4 flex-wrap">
+        {filteredEvents.length === 0 && (eventSearch || eventFilter !== "all") && (
+          <p className="text-center font-body text-sm text-navy opacity-35 py-4">No events match your filter.</p>
+        )}
+        <div className="flex gap-4 flex-wrap items-center">
           <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark"><Plus size={14} />Add Event</button>
           <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Events</button>
+          <button onClick={() => {
+            const sorted = [...events].sort((a, b) => {
+              if (!a.date) return 1;
+              if (!b.date) return -1;
+              return a.date.localeCompare(b.date);
+            });
+            setEvents(sorted);
+          }}
+            className="flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+            Sort by Date
+          </button>
         </div>
+        </>
+        )}
       </div>
     );
   };
@@ -879,6 +1387,7 @@ const AdminPage = () => {
     const [prints, setPrints] = useState(JSON.parse(JSON.stringify(siteData.prints)));
     const [syncing, setSyncing] = useState(false);
     const [syncMsg, setSyncMsg] = useState(null);
+    const [printSearch, setPrintSearch] = useState("");
 
     const update = (i, field, value) => {
       setPrints(prints.map((p, idx) => idx === i ? { ...p, [field]: value } : p));
@@ -891,7 +1400,7 @@ const AdminPage = () => {
 
     const remove = (i) => setPrints(prints.filter((_, idx) => idx !== i));
 
-    const save = () => updateData("prints", prints);
+    const save = () => saveWithToast("prints", prints, "Paintings");
 
     // Sync from poemdexter.com (Big Cartel)
     const syncFromBigCartel = async () => {
@@ -981,17 +1490,38 @@ const AdminPage = () => {
           )}
         </div>
 
-        {prints.map((p, i) => (
+        {/* Prints stats + search */}
+        {prints.length > 0 && (
+          <div className="flex gap-4 mb-4 flex-wrap">
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40">{prints.length} painting{prints.length !== 1 ? "s" : ""}</span>
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-green-700 opacity-50">{prints.filter(p => p.available).length} available</span>
+            {prints.some(p => !p.available) && <span className="font-mono text-[10px] tracking-editorial uppercase text-amber-600 opacity-50">{prints.filter(p => !p.available).length} sold out</span>}
+          </div>
+        )}
+        {prints.length > 3 && (
+          <div className="relative mb-4">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-navy opacity-30" />
+            <input value={printSearch} onChange={(e) => setPrintSearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 rounded-lg border border-navy border-opacity-15 font-body text-sm text-navy placeholder:text-navy placeholder:opacity-30"
+              placeholder="Search paintings..." />
+            {printSearch && (
+              <button onClick={() => setPrintSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-navy opacity-30 hover:opacity-60"><X size={14} /></button>
+            )}
+          </div>
+        )}
+
+        {prints.filter(p => !printSearch || p.title?.toLowerCase().includes(printSearch.toLowerCase()) || p.artist?.toLowerCase().includes(printSearch.toLowerCase())).map((p, i) => (
           <CollapsibleItem
             key={p.id}
             label={p.title || "New Print"}
+            thumbnail={p.imageUrl}
             sublabel={`${p.artist || "No artist"}${p.price ? ` · $${p.price}` : ""}${p.available ? "" : " · SOLD OUT"}`}
             defaultOpen={!p.title}
             onRemove={() => remove(i)}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Title" value={p.title} onChange={(v) => update(i, "title", v)} />
-              <Field label="Artist" value={p.artist} onChange={(v) => update(i, "artist", v)} />
+              <Field label="Title" value={p.title} onChange={(v) => update(i, "title", v)} required />
+              <Field label="Artist" value={p.artist} onChange={(v) => update(i, "artist", v)} required />
               <Field label="Medium" value={p.medium} onChange={(v) => update(i, "medium", v)} placeholder="Acrylic on Canvas" />
               <Field label="Price ($)" value={String(p.price)} onChange={(v) => update(i, "price", Number(v))} type="number" />
               <Field label="Toast Product ID" value={p.toastProductId || ""} onChange={(v) => update(i, "toastProductId", v || null)} placeholder="TOAST-PROD-ID" />
@@ -1009,11 +1539,26 @@ const AdminPage = () => {
               onChange={(v) => update(i, "imageUrl", v)}
               height="h-48"
             />
+            <button onClick={() => {
+              const src = prints[i];
+              setPrints([...prints, { ...src, id: Date.now(), title: src.title + " (copy)" }]);
+            }}
+              className="mt-3 flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+              <Copy size={12} /> Duplicate Painting
+            </button>
           </CollapsibleItem>
         ))}
-        <div className="flex gap-4 flex-wrap">
+        <div className="flex gap-4 flex-wrap items-center">
           <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark"><Plus size={14} />Add Print</button>
           <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Prints</button>
+          <button onClick={() => setPrints([...prints].sort((a, b) => (b.price || 0) - (a.price || 0)))}
+            className="flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+            Sort by Price
+          </button>
+          <button onClick={() => setPrints([...prints].sort((a, b) => (a.title || "").localeCompare(b.title || "")))}
+            className="flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+            Sort A-Z
+          </button>
         </div>
       </div>
     );
@@ -1111,10 +1656,17 @@ const AdminPage = () => {
 
     const add = () => setPress([...press, { id: Date.now(), outlet: "", headline: "", url: "", logo: "" }]);
     const remove = (i) => setPress(press.filter((_, idx) => idx !== i));
-    const save = () => updateData("press", press);
+    const save = () => saveWithToast("press", press, "Press");
 
     return (
       <div>
+        <div className="flex items-center justify-between mb-4">
+          <p className="font-body text-sm text-navy opacity-60">{press.length} article{press.length !== 1 ? "s" : ""}</p>
+          <ViewOnSite path="/press" />
+        </div>
+        {press.length === 0 && (
+          <EmptyState message="No press articles yet" onAdd={add} addLabel="Add First Article" />
+        )}
         {press.map((p, i) => (
           <CollapsibleItem
             key={p.id}
@@ -1129,9 +1681,9 @@ const AdminPage = () => {
                 logo={p.logo}
                 onChange={(name, logo) => selectOutlet(i, name, logo)}
               />
-              <Field label="Article URL" value={p.url} onChange={(v) => update(i, "url", v)} placeholder="https://..." />
+              <Field label="Article URL" value={p.url} onChange={(v) => update(i, "url", v)} placeholder="https://..." validate={validateUrl} />
               <div className="md:col-span-2">
-                <Field label="Article Headline" value={p.headline} onChange={(v) => update(i, "headline", v)} placeholder="Article headline or pull quote" />
+                <Field label="Article Headline" value={p.headline} onChange={(v) => update(i, "headline", v)} placeholder="Article headline or pull quote" required maxLength={120} />
               </div>
             </div>
             <ImageUploader
@@ -1140,6 +1692,12 @@ const AdminPage = () => {
               onChange={(v) => update(i, "logo", v)}
               height="h-16"
             />
+            <button onClick={() => {
+              setPress([...press, { ...p, id: Date.now(), headline: p.headline + " (copy)" }]);
+            }}
+              className="mt-3 flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+              <Copy size={12} /> Duplicate Article
+            </button>
           </CollapsibleItem>
         ))}
         <div className="flex gap-4 flex-wrap mt-2 items-center">
@@ -1176,7 +1734,7 @@ const AdminPage = () => {
   // ───────────────────────────────────────────────────────────────────────────
   const LinksEditor = () => {
     const [links, setLinks] = useState({ ...siteData.links });
-    const save = () => updateData("links", links);
+    const save = () => saveWithToast("links", links, "Links");
     const labels = {
       reservations:    "Resy Reservations URL",
       doordash:        "DoorDash Order URL",
@@ -1195,7 +1753,19 @@ const AdminPage = () => {
             sublabel={val ? String(val).substring(0, 50) : "Not set"}
             defaultOpen={false}
           >
-            <Field label={labels[key] || key} value={val} onChange={(v) => setLinks({ ...links, [key]: v })} />
+            <Field label={labels[key] || key} value={val} onChange={(v) => setLinks({ ...links, [key]: v })} validate={validateUrl} placeholder="https://" />
+            {val && (
+              <div className="flex gap-3 mt-1">
+                <button onClick={() => { navigator.clipboard?.writeText(val); setToast({ message: "URL copied!", type: "success" }); }}
+                  className="font-body text-[10px] text-navy opacity-30 hover:opacity-60 transition-opacity underline underline-offset-2">
+                  Copy URL
+                </button>
+                <a href={val} target="_blank" rel="noopener noreferrer"
+                  className="font-body text-[10px] text-flamingo opacity-50 hover:opacity-80 transition-opacity underline underline-offset-2">
+                  Open in new tab
+                </a>
+              </div>
+            )}
           </CollapsibleItem>
         ))}
         <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Links</button>
@@ -1223,7 +1793,7 @@ const AdminPage = () => {
       setEntries(entries.map((e, idx) => idx === i ? { ...e, [field]: value } : e));
     const add    = () => setEntries([...entries, { label: "", email: "" }]);
     const remove = (i) => setEntries(entries.filter((_, idx) => idx !== i));
-    const save   = () => updateData("contact", toObject(entries));
+    const save   = () => saveWithToast("contact", toObject(entries), "Contact");
 
     return (
       <div>
@@ -1246,12 +1816,14 @@ const AdminPage = () => {
                 <input value={entry.label} onChange={(e) => update(i, "label", e.target.value)}
                   className="form-input text-base py-2" placeholder="e.g. Press" />
               </div>
-              <div>
-                <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-40 block mb-1">Email Address</label>
-                <input value={entry.email} onChange={(e) => update(i, "email", e.target.value)}
-                  onPaste={(e) => setTimeout(() => update(i, "email", e.target.value.trim()), 0)}
-                  className="form-input text-base py-2" placeholder="email@example.com" type="email" />
-              </div>
+              <Field
+                label="Email Address"
+                value={entry.email}
+                onChange={(v) => update(i, "email", v)}
+                placeholder="email@example.com"
+                type="email"
+                validate={validateEmail}
+              />
             </div>
           </CollapsibleItem>
         ))}
@@ -1375,6 +1947,9 @@ const AdminPage = () => {
             </div>
             <button
               onClick={() => setPreviewMode(v => !v)}
+              aria-label={previewMode ? "Disable password gate" : "Enable password gate"}
+              role="switch"
+              aria-checked={previewMode}
               className={`relative flex-shrink-0 w-14 h-7 rounded-full transition-colors duration-300
                 ${previewMode ? "bg-flamingo" : "bg-navy bg-opacity-20"}`}
             >
@@ -1405,6 +1980,9 @@ const AdminPage = () => {
             </div>
             <button
               onClick={() => setShowOrderBtn(v => !v)}
+              aria-label={showOrderBtn ? "Hide order button" : "Show order button"}
+              role="switch"
+              aria-checked={showOrderBtn}
               className={`relative flex-shrink-0 w-14 h-7 rounded-full transition-colors duration-300
                 ${showOrderBtn ? "bg-flamingo" : "bg-navy bg-opacity-20"}`}
             >
@@ -1436,6 +2014,9 @@ const AdminPage = () => {
             </div>
             <button
               onClick={() => setShowBottleShop(v => !v)}
+              aria-label={showBottleShop ? "Hide bottle shop" : "Show bottle shop"}
+              role="switch"
+              aria-checked={showBottleShop}
               className={`relative flex-shrink-0 w-14 h-7 rounded-full transition-colors duration-300
                 ${showBottleShop ? "bg-flamingo" : "bg-navy bg-opacity-20"}`}
             >
@@ -1467,6 +2048,9 @@ const AdminPage = () => {
             </div>
             <button
               onClick={() => setShowPaintings(v => !v)}
+              aria-label={showPaintings ? "Hide paintings" : "Show paintings"}
+              role="switch"
+              aria-checked={showPaintings}
               className={`relative flex-shrink-0 w-14 h-7 rounded-full transition-colors duration-300
                 ${showPaintings ? "bg-flamingo" : "bg-navy bg-opacity-20"}`}
             >
@@ -1592,6 +2176,7 @@ const AdminPage = () => {
   // ───────────────────────────────────────────────────────────────────────────
   const MerchEditor = () => {
     const [items, setItems] = useState(JSON.parse(JSON.stringify(siteData.merch || [])));
+    const [merchSearch, setMerchSearch] = useState("");
 
     const update = (i, field, value) =>
       setItems(items.map((m, idx) => (idx === i ? { ...m, [field]: value } : m)));
@@ -1602,7 +2187,7 @@ const AdminPage = () => {
     }]);
 
     const remove = (i) => setItems(items.filter((_, idx) => idx !== i));
-    const save = () => updateData("merch", items);
+    const save = () => saveWithToast("merch", items, "Merchandise");
 
     const handleDragEnd = (event) => {
       const { active, over } = event;
@@ -1613,20 +2198,52 @@ const AdminPage = () => {
       }
     };
 
+    const publishedCount = items.filter(m => !m.draft).length;
+    const filteredMerch = items
+      .map((m, i) => ({ ...m, _origIdx: i }))
+      .filter(m => !merchSearch || m.name?.toLowerCase().includes(merchSearch.toLowerCase()) || m.category?.toLowerCase().includes(merchSearch.toLowerCase()));
+
     return (
       <div>
+        {/* Merch stats */}
+        {items.length > 0 && (
+          <div className="flex gap-4 mb-4 flex-wrap">
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40">{items.length} item{items.length !== 1 ? "s" : ""}</span>
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-green-700 opacity-50">{publishedCount} published</span>
+            {items.some(m => !m.available) && (
+              <span className="font-mono text-[10px] tracking-editorial uppercase text-amber-600 opacity-50">{items.filter(m => !m.available).length} sold out</span>
+            )}
+          </div>
+        )}
+
+        {/* Search */}
+        {items.length > 3 && (
+          <div className="relative mb-4">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-navy opacity-30" />
+            <input value={merchSearch} onChange={(e) => setMerchSearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 rounded-lg border border-navy border-opacity-15 font-body text-sm text-navy placeholder:text-navy placeholder:opacity-30"
+              placeholder="Search merchandise..." />
+            {merchSearch && (
+              <button onClick={() => setMerchSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-navy opacity-30 hover:opacity-60"><X size={14} /></button>
+            )}
+          </div>
+        )}
+
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((m) => m.id)} strategy={verticalListSortingStrategy}>
-        {items.map((item, i) => (
+        {filteredMerch.map((item) => {
+          const i = item._origIdx;
+          return (
           <SortableItem key={item.id} id={item.id}>
           <CollapsibleItem
             label={item.name || "New Item"}
+            thumbnail={item.imageUrl}
             sublabel={`${item.draft ? "DRAFT · " : ""}${item.category || "No category"}${item.price ? ` · $${item.price}` : ""}${item.available ? "" : " · SOLD OUT"}`}
             defaultOpen={!item.name}
             onRemove={() => remove(i)}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Item Name" value={item.name} onChange={(v) => update(i, "name", v)} placeholder="Logo Tee" />
+              <Field label="Item Name" value={item.name} onChange={(v) => update(i, "name", v)} placeholder="Logo Tee" required />
               <Field label="Category" value={item.category} onChange={(v) => update(i, "category", v)} placeholder="Apparel" />
               <Field label="Price ($)" value={String(item.price)} onChange={(v) => update(i, "price", Number(v))} type="number" />
               <Field label="Variants (sizes, colors)" value={item.variants} onChange={(v) => update(i, "variants", v)} placeholder="S / M / L / XL" />
@@ -1646,14 +2263,31 @@ const AdminPage = () => {
             </div>
             <Field label="Description" value={item.description} onChange={(v) => update(i, "description", v)} multiline />
             <ImageUploader label="Product Photo" value={item.imageUrl} onChange={(v) => update(i, "imageUrl", v)} height="h-48" />
+            <button onClick={() => {
+              const src = items[i];
+              setItems([...items, { ...src, id: Date.now(), name: src.name + " (copy)" }]);
+            }}
+              className="mt-3 flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+              <Copy size={12} /> Duplicate Item
+            </button>
           </CollapsibleItem>
           </SortableItem>
-        ))}
+        );
+        })}
         </SortableContext>
         </DndContext>
+        {filteredMerch.length === 0 && merchSearch && (
+          <p className="text-center font-body text-sm text-navy opacity-35 py-4">No items match your search.</p>
+        )}
         <div className="flex gap-4 flex-wrap">
           <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark"><Plus size={14} />Add Item</button>
           <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Merchandise</button>
+          {items.some(m => m.draft) && (
+            <button onClick={() => setItems(items.map(m => ({ ...m, draft: false })))}
+              className="flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+              <Check size={12} /> Publish All Drafts
+            </button>
+          )}
         </div>
       </div>
     );
@@ -1664,6 +2298,8 @@ const AdminPage = () => {
   // ───────────────────────────────────────────────────────────────────────────
   const BottlesEditor = () => {
     const [items, setItems] = useState(JSON.parse(JSON.stringify(siteData.bottles || [])));
+    const [bottleFilter, setBottleFilter] = useState("all"); // all | wine | beer
+    const [bottleSearch, setBottleSearch] = useState("");
 
     const update = (i, field, value) =>
       setItems(items.map((b, idx) => (idx === i ? { ...b, [field]: value } : b)));
@@ -1674,7 +2310,7 @@ const AdminPage = () => {
     }]);
 
     const remove = (i) => setItems(items.filter((_, idx) => idx !== i));
-    const save = () => updateData("bottles", items);
+    const save = () => saveWithToast("bottles", items, "Bottle Shop");
 
     const handleDragEnd = (event) => {
       const { active, over } = event;
@@ -1685,20 +2321,69 @@ const AdminPage = () => {
       }
     };
 
+    const wineCount = items.filter(b => b.category === "wine").length;
+    const beerCount = items.filter(b => b.category === "beer").length;
+    const publishedCount = items.filter(b => !b.draft).length;
+
+    const filteredBottles = items
+      .map((b, i) => ({ ...b, _origIdx: i }))
+      .filter(b => {
+        if (bottleFilter !== "all" && b.category !== bottleFilter) return false;
+        if (bottleSearch) {
+          const q = bottleSearch.toLowerCase();
+          if (!(b.name?.toLowerCase().includes(q) || b.varietal?.toLowerCase().includes(q) || b.region?.toLowerCase().includes(q))) return false;
+        }
+        return true;
+      });
+
     return (
       <div>
+        {/* Bottle stats */}
+        {items.length > 0 && (
+          <div className="flex gap-4 mb-4 flex-wrap items-center">
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40">{items.length} total</span>
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-30">{wineCount} wine · {beerCount} beer</span>
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-green-700 opacity-50">{publishedCount} published</span>
+            <div className="flex gap-1 ml-auto">
+              {[["all", "All"], ["wine", "Wine"], ["beer", "Beer"]].map(([val, label]) => (
+                <button key={val} onClick={() => setBottleFilter(val)}
+                  className={`font-mono text-[10px] tracking-editorial uppercase px-2 py-1 rounded transition-colors
+                    ${bottleFilter === val ? "bg-navy text-cream" : "text-navy opacity-40 hover:opacity-70"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bottle search */}
+        {items.length > 3 && (
+          <div className="relative mb-4">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-navy opacity-30" />
+            <input value={bottleSearch} onChange={(e) => setBottleSearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 rounded-lg border border-navy border-opacity-15 font-body text-sm text-navy placeholder:text-navy placeholder:opacity-30"
+              placeholder="Search bottles..." />
+            {bottleSearch && (
+              <button onClick={() => setBottleSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-navy opacity-30 hover:opacity-60"><X size={14} /></button>
+            )}
+          </div>
+        )}
+
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((b) => b.id)} strategy={verticalListSortingStrategy}>
-        {items.map((bottle, i) => (
+        {filteredBottles.map((bottle) => {
+          const i = bottle._origIdx;
+          return (
           <SortableItem key={bottle.id} id={bottle.id}>
           <CollapsibleItem
             label={bottle.name || "New Bottle"}
+            thumbnail={bottle.imageUrl}
             sublabel={`${bottle.draft ? "DRAFT · " : ""}${bottle.category === "wine" ? "Wine" : "Beer"} · ${bottle.varietal || "No varietal"}${bottle.price ? ` · $${bottle.price}` : ""}${bottle.available ? "" : " · SOLD OUT"}`}
             defaultOpen={!bottle.name}
             onRemove={() => remove(i)}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Bottle Name" value={bottle.name} onChange={(v) => update(i, "name", v)} placeholder="Château Margaux 2018" />
+              <Field label="Bottle Name" value={bottle.name} onChange={(v) => update(i, "name", v)} placeholder="Château Margaux 2018" required />
               <div>
                 <label className="block font-body text-navy text-sm font-bold mb-1">Category</label>
                 <select value={bottle.category} onChange={(e) => update(i, "category", e.target.value)}
@@ -1726,14 +2411,35 @@ const AdminPage = () => {
             </div>
             <Field label="Description" value={bottle.description} onChange={(v) => update(i, "description", v)} multiline />
             <ImageUploader label="Bottle Photo" value={bottle.imageUrl} onChange={(v) => update(i, "imageUrl", v)} height="h-48" />
+            <button onClick={() => {
+              const src = items[i];
+              setItems([...items, { ...src, id: Date.now(), name: src.name + " (copy)" }]);
+            }}
+              className="mt-3 flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+              <Copy size={12} /> Duplicate Bottle
+            </button>
           </CollapsibleItem>
           </SortableItem>
-        ))}
+        );
+        })}
         </SortableContext>
         </DndContext>
+        {filteredBottles.length === 0 && (bottleSearch || bottleFilter !== "all") && (
+          <p className="text-center font-body text-sm text-navy opacity-35 py-4">No bottles match your filter.</p>
+        )}
         <div className="flex gap-4 flex-wrap">
           <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark"><Plus size={14} />Add Bottle</button>
           <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Bottles</button>
+          <button onClick={() => setItems([...items].sort((a, b) => (b.price || 0) - (a.price || 0)))}
+            className="flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+            Sort by Price
+          </button>
+          {items.some(b => b.draft) && (
+            <button onClick={() => setItems(items.map(b => ({ ...b, draft: false })))}
+              className="flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+              <Check size={12} /> Publish All Drafts
+            </button>
+          )}
         </div>
       </div>
     );
@@ -1751,7 +2457,7 @@ const AdminPage = () => {
     };
     const add = () => setItems([...items, { id: Date.now(), title: "", description: "", days: [], startTime: "16:00", endTime: "18:00", active: true }]);
     const remove = (i) => setItems(items.filter((_, idx) => idx !== i));
-    const save = () => updateData("specials", items);
+    const save = () => saveWithToast("specials", items, "Daily Specials");
     const allDays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
     return (
@@ -1766,19 +2472,27 @@ const AdminPage = () => {
             </div>
             <div className="mt-3">
               <label className="block font-body text-navy text-sm font-bold mb-2">Active Days</label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
                 {allDays.map((day) => (
                   <button key={day} onClick={() => toggleDay(i, day)} type="button"
                     className={`px-3 py-1 rounded-full text-xs font-mono uppercase ${s.days.includes(day) ? "bg-flamingo text-white" : "bg-navy bg-opacity-10 text-navy opacity-50"}`}>
                     {day.slice(0, 3)}
                   </button>
                 ))}
+                <button onClick={() => update(i, "days", s.days.length === 7 ? [] : [...allDays])} type="button"
+                  className="font-mono text-[10px] text-navy opacity-30 hover:opacity-60 ml-2 underline underline-offset-2">
+                  {s.days.length === 7 ? "Clear All" : "Select All"}
+                </button>
               </div>
             </div>
             <div className="flex items-center gap-3 mt-3">
               <input type="checkbox" checked={s.active} onChange={(e) => update(i, "active", e.target.checked)} className="accent-flamingo w-4 h-4" />
               <span className="font-body text-sm text-navy">Active</span>
             </div>
+            <button onClick={() => setItems([...items, { ...s, id: Date.now(), title: s.title + " (copy)" }])}
+              className="mt-3 flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+              <Copy size={12} /> Duplicate Special
+            </button>
           </CollapsibleItem>
         ))}
         <div className="flex gap-4 flex-wrap">
@@ -1796,7 +2510,7 @@ const AdminPage = () => {
     const gr = siteData.googleRating || { rating: 4.6, count: 78 };
     const [gRating, setGRating] = useState(gr.rating);
     const [gCount, setGCount] = useState(gr.count);
-    const saveRating = () => updateData("googleRating", { rating: parseFloat(gRating) || 0, count: parseInt(gCount, 10) || 0 });
+    const saveRating = () => saveWithToast("googleRating", { rating: parseFloat(gRating) || 0, count: parseInt(gCount, 10) || 0 }, "Google Rating");
     return (
       <div className="mb-4 bg-cream-warm border border-navy border-opacity-10 rounded-lg p-4">
         <p className="font-body text-sm text-navy font-bold mb-1">Google Aggregate Rating</p>
@@ -1829,7 +2543,7 @@ const AdminPage = () => {
     const update = (i, field, value) => setItems(items.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
     const add = () => setItems([...items, { id: Date.now(), name: "", source: "Google", rating: 5, text: "", reviewUrl: "" }]);
     const remove = (i) => setItems(items.filter((_, idx) => idx !== i));
-    const save = () => updateData("testimonials", items);
+    const save = () => saveWithToast("testimonials", items, "Testimonials");
 
     // Pull reviews from Google Places API
     const syncGoogle = async () => {
@@ -1899,8 +2613,20 @@ const AdminPage = () => {
           )}
         </div>
 
+        {/* Review stats and search */}
+        {items.length > 0 && (
+          <div className="flex items-center gap-4 mb-4 flex-wrap">
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40">
+              {items.length} review{items.length !== 1 ? "s" : ""} · avg {(items.reduce((sum, r) => sum + (r.rating || 0), 0) / items.length).toFixed(1)} stars
+            </span>
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-30">
+              {items.filter(r => r.rating === 5).length} five-star
+            </span>
+          </div>
+        )}
+
         {items.map((r, i) => (
-          <CollapsibleItem key={r.id} label={r.name || "New Review"} sublabel={`${r.source} · ${"★".repeat(r.rating)}`} defaultOpen={!r.name} onRemove={() => remove(i)}>
+          <CollapsibleItem key={r.id} label={r.name || "New Review"} sublabel={`${r.source} · ${"★".repeat(r.rating)}${r.text ? ` · ${r.text.substring(0, 40)}...` : ""}`} defaultOpen={!r.name} onRemove={() => remove(i)}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Field label="Reviewer Name" value={r.name} onChange={(v) => update(i, "name", v)} placeholder="Jane D." />
               <div>
@@ -1921,7 +2647,7 @@ const AdminPage = () => {
               </div>
             </div>
             <Field label="Review Text" value={r.text} onChange={(v) => update(i, "text", v)} multiline />
-            <Field label="Review URL" value={r.reviewUrl || ""} onChange={(v) => update(i, "reviewUrl", v)} placeholder="https://g.co/kgs/... or https://www.yelp.com/..." />
+            <Field label="Review URL" value={r.reviewUrl || ""} onChange={(v) => update(i, "reviewUrl", v)} placeholder="https://g.co/kgs/... or https://www.yelp.com/..." validate={validateUrl} helpText="Link to the original review. Clicking a review card opens this URL." />
           </CollapsibleItem>
         ))}
         <div className="flex gap-4 flex-wrap">
@@ -1964,7 +2690,7 @@ const AdminPage = () => {
     return (
       <div className="space-y-4">
         <CollapsibleItem label="Compose Newsletter" sublabel="Create and preview email blasts" defaultOpen={true}>
-          <Field label="Subject Line" value={subject} onChange={setSubject} placeholder="This Week at Standard Fare" />
+          <Field label="Subject Line" value={subject} onChange={setSubject} placeholder="This Week at Standard Fare" maxLength={100} helpText="Keep it short — aim for under 50 characters for best open rates." />
           <Field label="Email Body" value={body} onChange={setBody} multiline />
           <div className="flex gap-3 mt-3">
             <button onClick={() => setPreview(!preview)} className="btn-ghost flex items-center gap-2 text-sm">
@@ -2009,7 +2735,7 @@ const AdminPage = () => {
   const SmsClubEditor = () => {
     const [club, setClub] = useState({ ...siteData.smsClub });
     const update = (field, value) => setClub({ ...club, [field]: value });
-    const save = () => updateData("smsClub", club);
+    const save = () => saveWithToast("smsClub", club, "SMS Club");
 
     return (
       <div className="space-y-4">
@@ -2020,10 +2746,10 @@ const AdminPage = () => {
         <Field label="Headline" value={club.headline || ""} onChange={(v) => update("headline", v)} placeholder="Join the Text Club" />
         <Field label="Subtext" value={club.subtext || ""} onChange={(v) => update("subtext", v)} placeholder="Get exclusive deals delivered to your phone." />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Keyword" value={club.keyword || ""} onChange={(v) => update("keyword", v)} placeholder="FARE" />
-          <Field label="Shortcode" value={club.shortcode || ""} onChange={(v) => update("shortcode", v)} placeholder="12345" />
+          <Field label="Keyword" value={club.keyword || ""} onChange={(v) => update("keyword", v)} placeholder="FARE" helpText="The word guests text to your shortcode to opt in." />
+          <Field label="Shortcode" value={club.shortcode || ""} onChange={(v) => update("shortcode", v)} placeholder="12345" helpText="The phone number guests text the keyword to." />
         </div>
-        <Field label="Webhook URL (optional)" value={club.webhookUrl || ""} onChange={(v) => update("webhookUrl", v)} placeholder="https://hooks.zapier.com/..." />
+        <Field label="Webhook URL (optional)" value={club.webhookUrl || ""} onChange={(v) => update("webhookUrl", v)} placeholder="https://hooks.zapier.com/..." validate={validateUrl} helpText="Optional Zapier or webhook URL for automating sign-up notifications." />
         <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save SMS Club</button>
       </div>
     );
@@ -2047,12 +2773,13 @@ const AdminPage = () => {
       const updated = items.filter((_, idx) => idx !== i);
       setPopular({ ...popular, manualItems: updated });
     };
-    const save = () => updateData("popularNow", popular);
+    const save = () => saveWithToast("popularNow", popular, "Popular Now");
 
     return (
       <div>
         <p className="font-body text-sm text-navy opacity-60 mb-4 leading-relaxed">
           Mark items as "Popular Now" — they'll get a badge on the menu and bottle shop pages.
+          Names must match exactly as they appear in the menu or bottle shop.
         </p>
         {items.map((item, i) => (
           <div key={i} className="flex items-center gap-3 mb-3 bg-cream-warm rounded-lg p-3">
@@ -2098,7 +2825,7 @@ const AdminPage = () => {
     const update = (i, field, value) =>
       setFeed(feed.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
 
-    const save = () => updateData("instagramFeed", feed);
+    const save = () => saveWithToast("instagramFeed", feed, "Instagram Feed");
 
     const handleForceRefresh = async () => {
       setIgSyncMsg(null);
@@ -2173,7 +2900,7 @@ const AdminPage = () => {
               onChange={(v) => update(i, "imageUrl", v)}
               height="h-32"
             />
-            <Field label="Instagram Post URL" value={post.postUrl} onChange={(v) => update(i, "postUrl", v)} placeholder="https://www.instagram.com/p/..." />
+            <Field label="Instagram Post URL" value={post.postUrl} onChange={(v) => update(i, "postUrl", v)} placeholder="https://www.instagram.com/p/..." validate={validateUrl} />
             <Field label="Caption (optional)" value={post.caption} onChange={(v) => update(i, "caption", v)} placeholder="Short caption..." />
           </CollapsibleItem>
         ))}
@@ -2190,6 +2917,7 @@ const AdminPage = () => {
   const BlogEditor = () => {
     const [posts, setPosts] = useState([...(siteData.blog || [])]);
     const [previewIdx, setPreviewIdx] = useState(null);
+    const [blogSearch, setBlogSearch] = useState("");
     const updatePost = (i, field, value) => setPosts(posts.map((p, idx) => idx === i ? { ...p, [field]: value } : p));
     const autoSlug = (title) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     const add = () => setPosts([...posts, {
@@ -2208,7 +2936,7 @@ const AdminPage = () => {
       [arr[i], arr[next]] = [arr[next], arr[i]];
       setPosts(arr);
     };
-    const save = () => updateData("blog", posts);
+    const save = () => saveWithToast("blog", posts, "Blog");
 
     const wordCount = (text) => (text || "").trim().split(/\s+/).filter(Boolean).length;
     const readTime = (text) => { const w = wordCount(text); return w < 200 ? "< 1 min read" : `${Math.ceil(w / 200)} min read`; };
@@ -2222,9 +2950,12 @@ const AdminPage = () => {
 
     return (
       <div>
-        <p className="font-body text-sm text-navy opacity-60 mb-4 leading-relaxed">
-          Write blog posts that appear on the "From the Kitchen" page. Great for SEO and building a community connection.
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <p className="font-body text-sm text-navy opacity-60 leading-relaxed">
+            Write blog posts that appear on the "From the Kitchen" page. Great for SEO and building a community connection.
+          </p>
+          <ViewOnSite path="/blog" />
+        </div>
 
         {/* Post stats */}
         {posts.length > 0 && (
@@ -2243,7 +2974,22 @@ const AdminPage = () => {
           </div>
         )}
 
-        {posts.map((post, i) => (
+        {/* Search blog posts */}
+        {posts.length > 3 && (
+          <div className="relative mb-4">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-navy opacity-30" />
+            <input value={blogSearch} onChange={(e) => setBlogSearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 rounded-lg border border-navy border-opacity-15 font-body text-sm text-navy placeholder:text-navy placeholder:opacity-30"
+              placeholder="Search blog posts..." />
+            {blogSearch && (
+              <button onClick={() => setBlogSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-navy opacity-30 hover:opacity-60"><X size={14} /></button>
+            )}
+          </div>
+        )}
+
+        {posts.map((post, i) => ({ ...post, _origIdx: i })).filter(post => !blogSearch || post.title?.toLowerCase().includes(blogSearch.toLowerCase()) || post.body?.toLowerCase().includes(blogSearch.toLowerCase())).map((post) => {
+          const i = post._origIdx;
+          return (
           <CollapsibleItem key={post.id}
             label={<span className="flex items-center gap-2">
               {post.title || "Untitled Post"}
@@ -2275,6 +3021,7 @@ const AdminPage = () => {
                   onChange={(e) => updatePost(i, "slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-|-$/g, ""))}
                   className="flex-1 p-2 rounded-lg border border-navy border-opacity-20 font-mono text-sm text-navy" placeholder="auto-generated-from-title" />
               </div>
+              <p className="font-body text-[10px] text-navy opacity-25 mt-1">Auto-generated from title. Edit to customize the URL.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2290,7 +3037,7 @@ const AdminPage = () => {
 
             <ImageUploader label="Cover Image" value={post.imageUrl} onChange={(v) => updatePost(i, "imageUrl", v)} height="h-32" />
 
-            <Field label="Excerpt (shown on blog list)" value={post.excerpt} onChange={(v) => updatePost(i, "excerpt", v)} multiline placeholder="A brief 1-2 sentence summary that appears on the blog listing page..." />
+            <Field label="Excerpt (shown on blog list)" value={post.excerpt} onChange={(v) => updatePost(i, "excerpt", v)} multiline placeholder="A brief 1-2 sentence summary that appears on the blog listing page..." maxLength={200} helpText="Keep it concise — this is the preview shown on the blog listing page." />
 
             {/* Body editor with formatting help and word count */}
             <div className="mb-4">
@@ -2411,10 +3158,17 @@ const AdminPage = () => {
             )}
 
           </CollapsibleItem>
-        ))}
+        );
+        })}
         <div className="flex gap-4 flex-wrap">
           <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo"><Plus size={14} />Add Post</button>
           <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Blog</button>
+          {posts.some(p => p.published === false) && (
+            <button onClick={() => { setPosts(posts.map(p => ({ ...p, published: true }))); }}
+              className="flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+              <Check size={12} /> Publish All Drafts
+            </button>
+          )}
         </div>
       </div>
     );
@@ -2433,7 +3187,7 @@ const AdminPage = () => {
     const updateItem = (i, field, value) => setItems(items.map((it, idx) => idx === i ? { ...it, [field]: value } : it));
     const addItem = () => setItems([...items, { id: Date.now(), name: "", description: "", price: 0, tag: "New" }]);
     const removeItem = (i) => setItems(items.filter((_, idx) => idx !== i));
-    const save = () => updateData("weeklyFeatures", { ...config, items });
+    const save = () => saveWithToast("weeklyFeatures", { ...config, items }, "Weekly Features");
 
     return (
       <div className="space-y-4">
@@ -2444,13 +3198,13 @@ const AdminPage = () => {
           <input type="checkbox" checked={config.enabled || false} onChange={(e) => update("enabled", e.target.checked)} className="accent-flamingo w-4 h-4" />
           <span className="font-body text-sm text-navy font-bold">Enable Weekly Features</span>
         </div>
-        <Field label="Headline" value={config.headline || ""} onChange={(v) => update("headline", v)} placeholder="This Week's Features" />
-        <Field label="Subtitle" value={config.subtitle || ""} onChange={(v) => update("subtitle", v)} placeholder="Chef's selections for the week" />
+        <Field label="Headline" value={config.headline || ""} onChange={(v) => update("headline", v)} placeholder="This Week's Features" maxLength={40} />
+        <Field label="Subtitle" value={config.subtitle || ""} onChange={(v) => update("subtitle", v)} placeholder="Chef's selections for the week" maxLength={80} />
 
         {items.map((item, i) => (
           <CollapsibleItem key={item.id} label={item.name || "Untitled Dish"} sublabel={item.tag || ""} onRemove={() => removeItem(i)} defaultOpen={!item.name}>
-            <Field label="Dish Name" value={item.name} onChange={(v) => updateItem(i, "name", v)} placeholder="Pan-Seared Halibut" />
-            <Field label="Description" value={item.description} onChange={(v) => updateItem(i, "description", v)} placeholder="Spring peas, lemon beurre blanc, crispy capers" />
+            <Field label="Dish Name" value={item.name} onChange={(v) => updateItem(i, "name", v)} placeholder="Pan-Seared Halibut" required />
+            <Field label="Description" value={item.description} onChange={(v) => updateItem(i, "description", v)} placeholder="Spring peas, lemon beurre blanc, crispy capers" maxLength={120} />
             <Field label="Price" value={item.price} onChange={(v) => updateItem(i, "price", Number(v))} type="number" placeholder="38" />
             <div className="mb-4">
               <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-1">Tag</label>
@@ -2459,6 +3213,10 @@ const AdminPage = () => {
                 {TAG_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
+            <button onClick={() => setItems([...items, { ...item, id: Date.now(), name: item.name + " (copy)" }])}
+              className="mt-3 flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+              <Copy size={12} /> Duplicate Dish
+            </button>
           </CollapsibleItem>
         ))}
 
@@ -2476,7 +3234,7 @@ const AdminPage = () => {
   const SeasonalCountdownEditor = () => {
     const [config, setConfig] = useState({ ...siteData.seasonalCountdown });
     const update = (field, value) => setConfig({ ...config, [field]: value });
-    const save = () => updateData("seasonalCountdown", config);
+    const save = () => saveWithToast("seasonalCountdown", config, "Seasonal Countdown");
 
     return (
       <div className="space-y-4">
@@ -2487,9 +3245,19 @@ const AdminPage = () => {
           <input type="checkbox" checked={config.enabled || false} onChange={(e) => update("enabled", e.target.checked)} className="accent-flamingo w-4 h-4" />
           <span className="font-body text-sm text-navy font-bold">Enable Countdown</span>
         </div>
-        <Field label="Menu Name" value={config.title || ""} onChange={(v) => update("title", v)} placeholder="Spring Menu" />
-        <Field label="Launch Date" value={config.launchDate || ""} onChange={(v) => update("launchDate", v)} placeholder="2026-04-15" />
-        <Field label="Teaser Text" value={config.teaser || ""} onChange={(v) => update("teaser", v)} placeholder="New seasonal dishes dropping soon..." />
+        <Field label="Menu Name" value={config.title || ""} onChange={(v) => update("title", v)} placeholder="Spring Menu" required />
+        <Field label="Launch Date" value={config.launchDate || ""} onChange={(v) => update("launchDate", v)} placeholder="2026-04-15" validate={validateDate} helpText="The date the new menu goes live. Countdown shows days remaining." />
+        {config.launchDate && /^\d{4}-\d{2}-\d{2}$/.test(config.launchDate) && (() => {
+          const diff = Math.ceil((new Date(config.launchDate + "T00:00:00") - new Date()) / (1000 * 60 * 60 * 24));
+          return diff > 0 ? (
+            <p className="font-mono text-[11px] text-flamingo opacity-60">{diff} day{diff !== 1 ? "s" : ""} until launch</p>
+          ) : diff === 0 ? (
+            <p className="font-mono text-[11px] text-green-700 opacity-70 font-bold">Launching today!</p>
+          ) : (
+            <p className="font-mono text-[11px] text-amber-600 opacity-60">This date has passed ({Math.abs(diff)} day{Math.abs(diff) !== 1 ? "s" : ""} ago)</p>
+          );
+        })()}
+        <Field label="Teaser Text" value={config.teaser || ""} onChange={(v) => update("teaser", v)} placeholder="New seasonal dishes dropping soon..." maxLength={100} />
         <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Countdown</button>
       </div>
     );
@@ -2501,7 +3269,7 @@ const AdminPage = () => {
   const EmailMarketingEditor = () => {
     const [config, setConfig] = useState({ ...siteData.emailMarketing });
     const update = (field, value) => setConfig({ ...config, [field]: value });
-    const save = () => updateData("emailMarketing", config);
+    const save = () => saveWithToast("emailMarketing", config, "Email Marketing");
 
     // Show stored signups count
     let storedSignups = 0;
@@ -2517,8 +3285,8 @@ const AdminPage = () => {
           <input type="checkbox" checked={config.enabled || false} onChange={(e) => update("enabled", e.target.checked)} className="accent-flamingo w-4 h-4" />
           <span className="font-body text-sm text-navy font-bold">Enable Email Signup</span>
         </div>
-        <Field label="Headline" value={config.headline || ""} onChange={(v) => update("headline", v)} placeholder="Stay in the Loop" />
-        <Field label="Subtext" value={config.subtext || ""} onChange={(v) => update("subtext", v)} placeholder="New menus, events, and exclusive offers." />
+        <Field label="Headline" value={config.headline || ""} onChange={(v) => update("headline", v)} placeholder="Stay in the Loop" maxLength={40} />
+        <Field label="Subtext" value={config.subtext || ""} onChange={(v) => update("subtext", v)} placeholder="New menus, events, and exclusive offers." maxLength={80} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-2">Provider</label>
@@ -2557,7 +3325,7 @@ const AdminPage = () => {
     const update = (i, field, value) => setItems(items.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
     const add = () => setItems([...items, { id: Date.now(), question: "", answer: "", category: "Dining" }]);
     const remove = (i) => setItems(items.filter((_, idx) => idx !== i));
-    const save = () => updateData("faq", items);
+    const save = () => saveWithToast("faq", items, "FAQ");
     const handleDragEnd = (event) => {
       const { active, over } = event;
       if (active.id !== over?.id) {
@@ -2572,9 +3340,9 @@ const AdminPage = () => {
           <SortableContext items={items.map((it) => it.id)} strategy={verticalListSortingStrategy}>
             {items.map((item, i) => (
               <SortableItem key={item.id} id={item.id}>
-                <CollapsibleItem label={item.question || "New Question"} sublabel={item.category} defaultOpen={!item.question} onRemove={() => remove(i)}>
-                  <Field label="Question" value={item.question} onChange={(v) => update(i, "question", v)} placeholder="e.g. What is the dress code?" />
-                  <Field label="Answer" value={item.answer} onChange={(v) => update(i, "answer", v)} multiline placeholder="Enter the answer..." />
+                <CollapsibleItem label={item.question || "New Question"} sublabel={`${item.category} · ${item.answer ? item.answer.substring(0, 40) + "..." : "No answer"}`} defaultOpen={!item.question} onRemove={() => remove(i)}>
+                  <Field label="Question" value={item.question} onChange={(v) => update(i, "question", v)} placeholder="e.g. What is the dress code?" required />
+                  <Field label="Answer" value={item.answer} onChange={(v) => update(i, "answer", v)} multiline placeholder="Enter the answer..." required maxLength={500} />
                   <div>
                     <label className="block font-body text-navy text-sm font-bold mb-1">Category</label>
                     <select value={item.category} onChange={(e) => update(i, "category", e.target.value)}
@@ -2582,14 +3350,22 @@ const AdminPage = () => {
                       {FAQ_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
+                  <button onClick={() => setItems([...items, { ...item, id: Date.now(), question: item.question + " (copy)" }])}
+                    className="mt-3 flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+                    <Copy size={12} /> Duplicate Question
+                  </button>
                 </CollapsibleItem>
               </SortableItem>
             ))}
           </SortableContext>
         </DndContext>
-        <div className="flex gap-4 flex-wrap">
+        <div className="flex gap-4 flex-wrap items-center">
           <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo"><Plus size={14} />Add Question</button>
           <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save FAQ</button>
+          <button onClick={() => setItems([...items].sort((a, b) => (a.category || "").localeCompare(b.category || "")))}
+            className="flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+            Group by Category
+          </button>
         </div>
       </div>
     );
@@ -2603,7 +3379,7 @@ const AdminPage = () => {
     const remove = (i) => setPhotos(photos.filter((_, idx) => idx !== i));
     const add = () => setPhotos([...photos, ""]);
     const reset = () => setPhotos([...DEFAULT_EVENT_PHOTOS]);
-    const save = () => updateData("stockPhotos", { ...siteData.stockPhotos, events: photos.filter(Boolean) });
+    const save = () => saveWithToast("stockPhotos", { ...siteData.stockPhotos, events: photos.filter(Boolean) }, "Stock Photos");
 
     return (
       <div className="space-y-4">
@@ -2667,7 +3443,7 @@ const AdminPage = () => {
   const PrivateEventsEditor = () => {
     const [config, setConfig] = useState({ ...siteData.privateEvents });
     const update = (field, value) => setConfig({ ...config, [field]: value });
-    const save = () => updateData("privateEvents", config);
+    const save = () => saveWithToast("privateEvents", config, "Private Events");
 
     const updateInclude = (i, value) => {
       const updated = [...(config.includes || [])];
@@ -2681,6 +3457,7 @@ const AdminPage = () => {
       <div className="space-y-4">
         <p className="font-body text-sm text-navy opacity-60 leading-relaxed">
           Configure the private events inquiry page. Inquiries are sent to your events email.
+          Guests can request full buyouts, semi-private dining, or custom event packages.
         </p>
         <div className="flex items-center gap-3 mb-2">
           <input type="checkbox" checked={config.enabled !== false} onChange={(e) => update("enabled", e.target.checked)} className="accent-flamingo w-4 h-4" />
@@ -2712,7 +3489,7 @@ const AdminPage = () => {
   const GiftCardsEditor = () => {
     const [config, setConfig] = useState({ ...siteData.giftCards });
     const update = (field, value) => setConfig({ ...config, [field]: value });
-    const save = () => updateData("giftCards", config);
+    const save = () => saveWithToast("giftCards", config, "Gift Cards");
 
     return (
       <div className="space-y-4">
@@ -2739,8 +3516,16 @@ const AdminPage = () => {
         <span className="block w-16 h-px bg-flamingo mx-auto mt-6" />
       </div>
 
+      {/* ── Quick-Jump Sidebar ────────────────────────────────── */}
+      <QuickJump
+        activeSection={activeSection}
+        onJump={handleJump}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
+
       <div className="section-padding bg-cream">
-        <div className="section-container max-w-4xl px-4 md:px-12">
+        <div className="section-container max-w-4xl px-4 md:px-12 xl:ml-56">
 
           {/* Draft mode banner */}
           {draftMode && (
@@ -2794,45 +3579,141 @@ const AdminPage = () => {
                   Draft Mode
                 </button>
               )}
+              <button
+                onClick={toggleAllSections}
+                className="inline-flex items-center gap-2 font-body text-sm text-navy opacity-50 hover:opacity-80
+                           border border-navy border-opacity-20 hover:border-navy rounded-lg px-4 py-2 transition-all"
+              >
+                {allCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                {allCollapsed ? "Expand All" : "Collapse All"}
+              </button>
             </div>
-            <button
-              onClick={() => { logout(); navigate("/"); }}
-              className="flex items-center gap-2 font-body text-sm text-navy opacity-50 hover:opacity-80 hover:text-flamingo transition-all"
-            >
-              <LogOut size={14} />
-              Log Out
-            </button>
+            <div className="flex items-center gap-4">
+              {/* Connection status dot */}
+              <span className="flex items-center gap-1" title={dbReady ? "Connected to cloud database" : dbLoading ? "Connecting..." : "Local storage only"}>
+                <span className={`w-1.5 h-1.5 rounded-full ${dbReady ? "bg-green-500" : dbLoading ? "bg-amber-400 animate-pulse" : "bg-navy opacity-20"}`} />
+                <span className="hidden md:inline font-mono text-[10px] text-navy opacity-20">
+                  {dbReady ? "Cloud" : dbLoading ? "Connecting" : "Local"}
+                </span>
+              </span>
+              <span className="hidden md:inline font-mono text-[10px] text-navy opacity-20" title="Keyboard shortcuts: Cmd+S to save, Cmd+Z to undo">
+                ⌘S save · ⌘Z undo
+              </span>
+              {saveStatus === "saving" && (
+                <span className="font-mono text-[10px] text-flamingo opacity-60 animate-pulse">Saving...</span>
+              )}
+              {saveStatus === "error" && (
+                <span className="font-mono text-[10px] text-red-500 flex items-center gap-1">
+                  <AlertCircle size={10} /> Save failed
+                  <button onClick={retrySupabase} className="underline underline-offset-2 hover:text-red-700">retry</button>
+                </span>
+              )}
+              {lastSavedAt && saveStatus !== "saving" && saveStatus !== "error" && (
+                <span className="font-mono text-[10px] text-navy opacity-30" title={lastSavedAt.toLocaleString()}>
+                  Saved {(() => {
+                    const diff = Math.round((Date.now() - lastSavedAt.getTime()) / 1000);
+                    if (diff < 5) return "just now";
+                    if (diff < 60) return `${diff}s ago`;
+                    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+                    return lastSavedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+                  })()}
+                </span>
+              )}
+              <button
+                onClick={() => { logout(); navigate("/"); }}
+                className="flex items-center gap-2 font-body text-sm text-navy opacity-50 hover:opacity-80 hover:text-flamingo transition-all"
+              >
+                <LogOut size={14} />
+                Log Out
+              </button>
+            </div>
           </div>
 
-          {/* Admin sections — each is an accordion panel */}
-          <div className="mb-6"><AdminSection title="Site Settings" defaultOpen={true}><SiteSettingsEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Hero — Text, Buttons &amp; Slideshow"><HeroSlideshowEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Our Story &amp; Team"><AboutEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Weekly Features"><WeeklyFeaturesEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Hours"><HoursEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Location & Map"><LocationEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Menus"><MenuEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Gallery"><GalleryEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Instagram Feed"><InstagramFeedEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Events & Tickets"><EventsEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Paintings"><PrintsEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Merchandise"><MerchEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Bottle Shop"><BottlesEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Daily Specials"><SpecialsEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Testimonials"><TestimonialsEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Popular Now Badges"><PopularNowEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Blog — From the Kitchen"><BlogEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Seasonal Menu Countdown"><SeasonalCountdownEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Email Marketing"><EmailMarketingEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Private Events"><PrivateEventsEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Gift Cards"><GiftCardsEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="SMS Text Club"><SmsClubEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Newsletter"><NewsletterEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="FAQ"><FAQEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Press"><PressEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Stock Photos"><StockPhotosEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="External Links"><LinksEditor /></AdminSection></div>
-          <div className="mt-6"><AdminSection title="Contact Emails"><ContactEditor /></AdminSection></div>
+          {/* ── Section summary ─────────────────────────────────────── */}
+          <div className="mb-6 p-4 bg-cream-warm rounded-lg border border-navy border-opacity-10">
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-[10px] font-mono tracking-editorial uppercase text-navy opacity-40">
+              <span>{(siteData.events || []).length} events</span>
+              <span>{(siteData.blog || []).length} blog posts</span>
+              <span>{(siteData.gallery || []).length} gallery items</span>
+              <span>{(siteData.prints || []).length} paintings</span>
+              <span>{(siteData.merch || []).length} merch</span>
+              <span>{(siteData.bottles || []).length} bottles</span>
+              <span>{(siteData.testimonials || []).length} reviews</span>
+              <span>{(siteData.press || []).length} press</span>
+              <span>{(siteData.faq || []).length} FAQ</span>
+              <span>{Object.keys(siteData.menus || {}).length} menus</span>
+            </div>
+          </div>
+
+          {/* ── CONTENT ─────────────────────────────────────────────── */}
+          <div className="mb-8">
+            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+              <span>📝</span> Content
+            </p>
+            <div className="mb-6"><AdminSection title="Site Settings" defaultOpen={true} id="settings" description="Passwords, preview mode, and visibility toggles"><SiteSettingsEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Hero — Text, Buttons &amp; Slideshow" id="hero" description="Landing page headline, call-to-action buttons, and background slideshow"><HeroSlideshowEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Our Story &amp; Team" id="about" badge={(siteData.about?.team || []).length} description="Restaurant story copy and team member bios"><AboutEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Weekly Features" id="weekly" badge={(siteData.weeklyFeatures?.features || []).length} description="Recurring weekly events like happy hour or brunch"><WeeklyFeaturesEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Menus" id="menus" badge={Object.keys(siteData.menus || {}).length} description="Brunch, dinner, cocktails, wine, and dessert menus"><MenuEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Blog — From the Kitchen" id="blog" badge={(siteData.blog?.posts || []).length} description="Chef notes, sourcing stories, and behind the scenes"><BlogEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="FAQ" id="faq" badge={(siteData.faq || []).length} description="Frequently asked questions displayed on the site"><FAQEditor /></AdminSection></div>
+          </div>
+
+          {/* ── OPERATIONS ──────────────────────────────────────────── */}
+          <div className="mb-8">
+            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+              <span>🕐</span> Operations
+            </p>
+            <div className="mt-6"><AdminSection title="Hours" id="hours" description="Regular hours and temporary overrides"><HoursEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Location &amp; Map" id="location" description="Address, phone, and embedded Google Maps"><LocationEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Daily Specials" id="specials" description="Daily food and drink specials by day of week"><SpecialsEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Seasonal Menu Countdown" id="countdown" description="Countdown timer for upcoming seasonal menu launches"><SeasonalCountdownEditor /></AdminSection></div>
+          </div>
+
+          {/* ── COMMERCE ────────────────────────────────────────────── */}
+          <div className="mb-8">
+            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+              <span>🛒</span> Commerce
+            </p>
+            <div className="mt-6"><AdminSection title="Events &amp; Tickets" id="events" badge={(siteData.events || []).length} description="Ticketed events, wine dinners, and special nights"><EventsEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Paintings" id="paintings" badge={(siteData.prints || []).length} description="Art for sale — displayed on the paintings page"><PrintsEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Merchandise" id="merch" badge={(siteData.merch || []).length} description="Branded merchandise for sale"><MerchEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Bottle Shop" id="bottles" badge={(siteData.bottles || []).length} description="Wine and spirits available for retail purchase"><BottlesEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Gift Cards" id="giftcards" description="Gift card balance check feature"><GiftCardsEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Private Events" id="privateevents" description="Private event inquiry page and packages"><PrivateEventsEditor /></AdminSection></div>
+          </div>
+
+          {/* ── MEDIA ───────────────────────────────────────────────── */}
+          <div className="mb-8">
+            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+              <span>📷</span> Media
+            </p>
+            <div className="mt-6"><AdminSection title="Gallery" id="gallery" badge={(siteData.gallery || []).length} description="Photo gallery displayed on the gallery page"><GalleryEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Instagram Feed" id="instagram" description="Instagram integration and feed settings"><InstagramFeedEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Stock Photos" id="stockphotos" description="Fallback photos for events without custom images"><StockPhotosEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Testimonials" id="testimonials" badge={(siteData.testimonials || []).length} description="Guest reviews and testimonials"><TestimonialsEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Press" id="press" badge={(siteData.press || []).length} description="Press coverage and media mentions"><PressEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Popular Now Badges" id="popular" description="Highlight popular menu items with badges"><PopularNowEditor /></AdminSection></div>
+          </div>
+
+          {/* ── MARKETING ───────────────────────────────────────────── */}
+          <div className="mb-8">
+            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+              <span>📣</span> Marketing
+            </p>
+            <div className="mt-6"><AdminSection title="Email Marketing" id="email" description="Email campaign settings and templates"><EmailMarketingEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="SMS Text Club" id="sms" description="Text club sign-up configuration"><SmsClubEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Newsletter" id="newsletter" description="Newsletter popup and sign-up settings"><NewsletterEditor /></AdminSection></div>
+          </div>
+
+          {/* ── SETTINGS ────────────────────────────────────────────── */}
+          <div className="mb-8">
+            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+              <span>⚙️</span> Settings
+            </p>
+            <div className="mt-6"><AdminSection title="External Links" id="links" description="Resy, DoorDash, Toast, Instagram, and other URLs"><LinksEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Contact Emails" id="contact" description="Email addresses for general, press, and event inquiries"><ContactEditor /></AdminSection></div>
+          </div>
 
           {/* Storage status + Reset to Defaults */}
           <div className="mt-12 border border-flamingo border-opacity-30 rounded-lg p-6">
@@ -2855,7 +3736,44 @@ const AdminPage = () => {
                 Retry connection
               </button>
             )}
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap gap-4 items-center">
+              <button
+                onClick={() => {
+                  const json = JSON.stringify(siteData, null, 2);
+                  const blob = new Blob([json], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `standard-fare-backup-${new Date().toISOString().split("T")[0]}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  setToast({ message: "Backup downloaded!", type: "success" });
+                }}
+                className="font-body text-xs text-navy opacity-50 hover:opacity-80 transition-all underline underline-offset-2"
+              >
+                Export Site Data (JSON)
+              </button>
+              <label className="font-body text-xs text-navy opacity-50 hover:opacity-80 transition-all underline underline-offset-2 cursor-pointer">
+                Import Backup
+                <input type="file" accept=".json" className="hidden" onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = async (ev) => {
+                    try {
+                      const data = JSON.parse(ev.target.result);
+                      if (!data || typeof data !== "object") throw new Error("Invalid JSON");
+                      if (!window.confirm("This will replace ALL current site data with the imported backup. Are you sure?")) return;
+                      Object.entries(data).forEach(([key, value]) => updateData(key, value));
+                      setToast({ message: "Backup restored! Refresh to see changes.", type: "success" });
+                    } catch (err) {
+                      setToast({ message: `Import failed: ${err.message}`, type: "error" });
+                    }
+                  };
+                  reader.readAsText(file);
+                  e.target.value = "";
+                }} />
+              </label>
               <button
                 onClick={() => {
                   if (window.confirm(
@@ -2865,7 +3783,7 @@ const AdminPage = () => {
                     window.location.reload();
                   }
                 }}
-                className="font-body text-xs text-navy opacity-40 hover:opacity-80 hover:text-flamingo-dark transition-all underline underline-offset-2"
+                className="font-body text-xs text-flamingo-dark opacity-60 hover:opacity-100 transition-all underline underline-offset-2"
               >
                 Reset all content to defaults
               </button>
@@ -2873,6 +3791,13 @@ const AdminPage = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Save Toast ─────────────────────────────────────────── */}
+      {toast && <SaveToast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
+
+      {/* ── Scroll to Top ──────────────────────────────────────── */}
+      <ScrollToTop />
+
       {/* Undo toast — appears after any save */}
       {canUndo && (
         <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
