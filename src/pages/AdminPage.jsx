@@ -42,6 +42,7 @@ import useAdminSession from "../hooks/useAdminSession";
 import { logActivity } from "../lib/crmDb";
 import TemplatePicker, { EVENT_TEMPLATES, BLOG_TEMPLATES } from "../components/admin/ContentTemplates";
 import IntegrationsPanel from "../components/admin/IntegrationsPanel";
+import NotificationCenter from "../components/admin/NotificationCenter";
 
 // ── Sortable wrapper for drag-and-drop reorder ──────────────────────────
 const SortableItem = ({ id, children }) => {
@@ -877,18 +878,25 @@ const AdminPage = () => {
 
     return (
       <div>
-        {/* Menu tab selector */}
+        {/* Menu tab selector with item counts */}
         <div className="flex gap-2 mb-6 flex-wrap">
-          {Object.keys(menus).map((key) => (
-            <button
-              key={key}
-              onClick={() => setActiveMenu(key)}
-              className={`font-mono text-xs tracking-editorial uppercase px-4 py-2 border transition-all
-                ${activeMenu === key ? "bg-navy text-cream border-navy" : "border-navy border-opacity-30 text-navy hover:border-navy"}`}
-            >
-              {menus[key].name}
-            </button>
-          ))}
+          {Object.keys(menus).map((key) => {
+            const itemCount = (menus[key].sections || []).reduce((sum, s) => sum + (s.items || []).length, 0);
+            return (
+              <button
+                key={key}
+                onClick={() => setActiveMenu(key)}
+                className={`font-mono text-xs tracking-editorial uppercase px-4 py-2.5 rounded-xl border transition-all ${
+                  activeMenu === key
+                    ? "bg-navy text-cream border-navy shadow-admin"
+                    : "border-navy/20 text-navy hover:border-navy/40 hover:shadow-sm"
+                }`}
+              >
+                {menus[key].name}
+                <span className={`ml-1.5 text-[9px] ${activeMenu === key ? "text-flamingo" : "opacity-30"}`}>{itemCount}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Menu note */}
@@ -924,11 +932,13 @@ const AdminPage = () => {
             : section.items.map((item, ii) => ({ ...item, _idx: ii }));
           if (menuSearch && filteredItems.length === 0) return null;
           return (
-          <div key={si} className="mb-8 border border-navy border-opacity-10 rounded p-5">
-            <h4 className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4">
-              {section.title}
-              <span className="ml-2 font-mono text-[10px] text-navy opacity-30">{section.items.length} items</span>
-            </h4>
+          <div key={si} className="mb-8 border border-navy/[0.08] rounded-2xl p-5 bg-white shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-mono text-flamingo/70 text-xs tracking-editorial uppercase flex items-center gap-2">
+                {section.title}
+                <span className="font-mono text-[9px] bg-navy/[0.05] text-navy/30 px-2 py-0.5 rounded-full">{section.items.length}</span>
+              </h4>
+            </div>
 
             {filteredItems.map((item) => {
               const ii = item._idx;
@@ -976,6 +986,36 @@ const AdminPage = () => {
                     <input value={item.description} onChange={(e) => updateItem(si, ii, "description", e.target.value)}
                       className="form-input text-base py-2" placeholder="Description" />
                   </div>
+                </div>
+                {/* Item actions: duplicate, move to section */}
+                <div className="flex items-center gap-3 mt-3 pt-3 border-t border-navy/[0.06]">
+                  <button onClick={() => {
+                    const m = JSON.parse(JSON.stringify(menus));
+                    m[activeMenu].sections[si].items.splice(ii + 1, 0, { ...item, _idx: undefined });
+                    setMenus(m);
+                  }}
+                    className="flex items-center gap-1 font-mono text-[10px] text-navy/30 hover:text-flamingo transition-colors">
+                    <Copy size={10} /> Duplicate
+                  </button>
+                  {menus[activeMenu].sections.length > 1 && (
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        const targetSi = parseInt(e.target.value, 10);
+                        if (isNaN(targetSi)) return;
+                        const m = JSON.parse(JSON.stringify(menus));
+                        const moved = m[activeMenu].sections[si].items.splice(ii, 1)[0];
+                        m[activeMenu].sections[targetSi].items.push(moved);
+                        setMenus(m);
+                      }}
+                      className="font-mono text-[10px] text-navy/30 bg-transparent border-none cursor-pointer hover:text-flamingo focus:outline-none"
+                    >
+                      <option value="">Move to...</option>
+                      {menus[activeMenu].sections.map((sec, idx) => idx !== si ? (
+                        <option key={idx} value={idx}>{sec.title}</option>
+                      ) : null)}
+                    </select>
+                  )}
                 </div>
               </CollapsibleItem>
             );
@@ -3102,19 +3142,49 @@ const AdminPage = () => {
 
             <Field label="Excerpt (shown on blog list)" value={post.excerpt} onChange={(v) => updatePost(i, "excerpt", v)} multiline placeholder="A brief 1-2 sentence summary that appears on the blog listing page..." maxLength={200} helpText="Keep it concise — this is the preview shown on the blog listing page." />
 
-            {/* Body editor with formatting help and word count */}
+            {/* Body editor with formatting toolbar and word count */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50">Full Post Body</label>
-                <span className="font-mono text-[10px] text-navy opacity-30">
+                <label className="font-mono text-[11px] tracking-editorial uppercase text-navy/45 font-medium">Full Post Body</label>
+                <span className="font-mono text-[10px] text-navy/30 tabular-nums">
                   {wordCount(post.body)} words · {readTime(post.body)}
                 </span>
               </div>
-              <textarea value={post.body} onChange={(e) => updatePost(i, "body", e.target.value)} rows={14}
-                className="w-full p-4 rounded-lg border border-navy border-opacity-20 font-body text-sm text-navy leading-relaxed resize-y"
+              {/* Formatting toolbar */}
+              <div className="flex items-center gap-1 p-2 bg-cream-warm rounded-t-lg border border-b-0 border-navy/10">
+                {[
+                  { label: "H2", title: "Insert heading", insert: "\n## " },
+                  { label: "H3", title: "Insert subheading", insert: "\n### " },
+                  { label: "B", title: "Bold text", insert: "**bold**", className: "font-bold" },
+                  { label: "I", title: "Italic text", insert: "*italic*", className: "italic" },
+                  { label: "—", title: "Insert divider", insert: "\n---\n" },
+                  { label: "•", title: "Insert bullet point", insert: "\n• " },
+                  { label: '"', title: "Insert blockquote", insert: '\n> ' },
+                  { label: "🔗", title: "Insert link", insert: "[link text](https://)" },
+                ].map((btn) => (
+                  <button key={btn.label} type="button" title={btn.title}
+                    onClick={() => {
+                      const ta = document.getElementById(`blog-body-${post.id}`);
+                      if (!ta) return;
+                      const start = ta.selectionStart;
+                      const end = ta.selectionEnd;
+                      const text = post.body || "";
+                      const newText = text.substring(0, start) + btn.insert + text.substring(end);
+                      updatePost(i, "body", newText);
+                      setTimeout(() => { ta.focus(); ta.selectionStart = ta.selectionEnd = start + btn.insert.length; }, 0);
+                    }}
+                    className={`font-mono text-xs text-navy/40 hover:text-flamingo hover:bg-flamingo/5 px-2 py-1 rounded transition-colors ${btn.className || ""}`}>
+                    {btn.label}
+                  </button>
+                ))}
+                <span className="flex-1" />
+                <span className="font-mono text-[9px] text-navy/20">Markdown supported</span>
+              </div>
+              <textarea id={`blog-body-${post.id}`} value={post.body} onChange={(e) => updatePost(i, "body", e.target.value)} rows={14}
+                className="w-full p-4 rounded-b-lg rounded-t-none border border-navy/15 font-body text-sm text-navy leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-flamingo/20 focus:border-flamingo/30"
                 placeholder="Write the full blog post here.&#10;&#10;Use blank lines between paragraphs to create spacing.&#10;&#10;Each paragraph will be displayed as a separate block on the blog." />
-              <p className="font-body text-[11px] text-navy opacity-30 mt-1">
-                Separate paragraphs with blank lines. Each line break creates a new paragraph on the blog.
+              <p className="font-body text-[11px] text-navy/25 mt-1">
+                Separate paragraphs with blank lines. Use **bold**, *italic*, ## headings, and [links](url) for formatting.
               </p>
             </div>
 
@@ -3723,6 +3793,10 @@ const AdminPage = () => {
             <p className="font-mono text-flamingo/70 text-[11px] tracking-editorial uppercase mb-5 flex items-center gap-2 admin-group-label w-fit">
               <span>📊</span> Dashboard
             </p>
+            {/* Notification Center — shows pending actions inline */}
+            <div className="mb-6">
+              <NotificationCenter siteData={siteData} onJump={handleJump} />
+            </div>
             <div className="mt-6"><AdminSection title="Analytics & Content Health" id="analytics" description="Content completeness, stats, and issues to address"><AnalyticsDashboard siteData={siteData} /></AdminSection></div>
             <div className="mt-6"><AdminSection title="Activity Log" id="activitylog" description="Recent admin changes and edits"><ActivityLog /></AdminSection></div>
             <div className="mt-6"><AdminSection title="Content Scheduler" id="schedule" description="Schedule content to publish or unpublish at specific dates"><ContentScheduler /></AdminSection></div>
