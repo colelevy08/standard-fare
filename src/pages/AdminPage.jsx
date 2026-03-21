@@ -41,6 +41,7 @@ import AnalyticsDashboard from "../components/admin/AnalyticsDashboard";
 import useAdminSession from "../hooks/useAdminSession";
 import { logActivity } from "../lib/crmDb";
 import TemplatePicker, { EVENT_TEMPLATES, BLOG_TEMPLATES } from "../components/admin/ContentTemplates";
+import IntegrationsPanel from "../components/admin/IntegrationsPanel";
 
 // ── Sortable wrapper for drag-and-drop reorder ──────────────────────────
 const SortableItem = ({ id, children }) => {
@@ -168,6 +169,9 @@ const SECTION_GROUPS = [
     { id: "sms", title: "SMS Text Club" },
     { id: "newsletter", title: "Newsletter" },
     { id: "seo", title: "SEO & Social Sharing" },
+  ]},
+  { group: "Integrations", icon: "🔌", sections: [
+    { id: "integrations", title: "Resy & Toast" },
   ]},
   { group: "Settings", icon: "⚙️", sections: [
     { id: "settings", title: "Site Settings" },
@@ -3775,6 +3779,14 @@ const AdminPage = () => {
             <div className="mt-6"><AdminSection title="SMS Text Club" id="sms" description="Text club sign-up configuration"><SmsClubEditor /></AdminSection></div>
             <div className="mt-6"><AdminSection title="Newsletter" id="newsletter" description="Newsletter popup and sign-up settings"><NewsletterEditor /></AdminSection></div>
             <div className="mt-6"><AdminSection title="SEO & Social Sharing" id="seo" description="Meta titles, descriptions, and social share previews for every page"><SEOEditor siteData={siteData} updateData={updateData} saveWithToast={saveWithToast} /></AdminSection></div>
+          </div>
+
+          {/* ── INTEGRATIONS ─────────────────────────────────────────── */}
+          <div className="mb-8">
+            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+              <span>🔌</span> Integrations
+            </p>
+            <div className="mt-6"><AdminSection title="Resy & Toast" id="integrations" description="Connect Resy reservations and Toast POS for live availability, ordering, and gift cards"><IntegrationsPanel siteData={siteData} updateData={updateData} saveWithToast={saveWithToast} /></AdminSection></div>
           </div>
 
           {/* ── SETTINGS ────────────────────────────────────────────── */}
