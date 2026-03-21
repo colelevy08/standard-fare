@@ -174,3 +174,29 @@ select.form-input {
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
 }
+
+/* ── Accessibility: respect reduced-motion preference ──────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ticker-scroll { animation: none !important; }
+  .animate-pulse { animation: none !important; }
+}
+
+/* ── Mobile: overscroll behavior ───────────────────────────────────── */
+html { overscroll-behavior-y: none; }
+
+/* ── Safe area for fixed bottom elements (notch/home indicator) ───── */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* ── Mobile: prevent text size adjust ──────────────────────────────── */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+/* ── iOS: prevent zoom on input focus (inputs must be ≥16px) ──────── */
+@supports (-webkit-touch-callout: none) {
+  input, textarea, select { font-size: max(16px, 1em); }
+}

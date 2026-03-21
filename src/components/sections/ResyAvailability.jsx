@@ -214,20 +214,20 @@ const ResyAvailability = () => {
         <button
           onClick={() => browseDate(-1)}
           disabled={isToday(currentDate)}
-          className="p-1 text-navy opacity-30 hover:opacity-60 disabled:opacity-10 transition-opacity"
+          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-navy opacity-30 hover:opacity-60 disabled:opacity-10 transition-opacity touch-manipulation"
           aria-label="Previous day"
         >
-          <ChevronLeft size={16} />
+          <ChevronLeft size={18} />
         </button>
         <span className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40 flex-1 text-center">
           {currentDate}
         </span>
         <button
           onClick={() => browseDate(1)}
-          className="p-1 text-navy opacity-30 hover:opacity-60 transition-opacity"
+          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-navy opacity-30 hover:opacity-60 transition-opacity touch-manipulation"
           aria-label="Next day"
         >
-          <ChevronRight size={16} />
+          <ChevronRight size={18} />
         </button>
         {manualDate && (
           <button

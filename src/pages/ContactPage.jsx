@@ -169,12 +169,12 @@ const ContactPage = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40 block mb-1.5">Name</label>
-                      <input type="text" name="name" required value={form.name}
+                      <input type="text" name="name" required value={form.name} autoComplete="name"
                         onChange={handleChange} className="form-input" placeholder="Your name" />
                     </div>
                     <div>
                       <label className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40 block mb-1.5">Email</label>
-                      <input type="email" name="email" required value={form.email}
+                      <input type="email" name="email" required value={form.email} autoComplete="email" inputMode="email"
                         onChange={handleChange} className="form-input" placeholder="your@email.com" />
                     </div>
                   </div>

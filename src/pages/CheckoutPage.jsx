@@ -201,11 +201,11 @@ const CheckoutPage = () => {
                 <h2 className="font-display text-navy text-xl mb-6">Your Information</h2>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                  <input name="name" placeholder="Full Name" value={form.name}
+                  <input name="name" placeholder="Full Name" value={form.name} autoComplete="name"
                     onChange={handleChange} required className="form-input text-base" />
-                  <input name="email" type="email" placeholder="Email" value={form.email}
+                  <input name="email" type="email" placeholder="Email" value={form.email} autoComplete="email" inputMode="email"
                     onChange={handleChange} required className="form-input text-base" />
-                  <input name="phone" type="tel" placeholder="Phone" value={form.phone}
+                  <input name="phone" type="tel" placeholder="Phone" value={form.phone} autoComplete="tel" inputMode="tel"
                     onChange={handleChange} required className="form-input text-base" />
                   <textarea name="notes" placeholder="Order notes (optional)" value={form.notes}
                     onChange={handleChange} rows={3}
