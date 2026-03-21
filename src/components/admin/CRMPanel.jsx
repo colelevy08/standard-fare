@@ -271,13 +271,41 @@ const CustomerForm = ({ customer, onSave, onCancel }) => {
             </div>
             <div>
               <label className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40 block mb-1">Visit Count</label>
-              <input type="number" min="0" value={form.visit_count} onChange={e => update("visit_count", parseInt(e.target.value) || 0)}
+              <div className="flex items-center gap-2">
+                <input type="number" min="0" value={form.visit_count} onChange={e => update("visit_count", parseInt(e.target.value) || 0)}
+                  className="w-full p-2 rounded-lg border border-navy border-opacity-20 font-body text-sm" />
+                <button type="button" onClick={() => {
+                  update("visit_count", (form.visit_count || 0) + 1);
+                  update("last_visit", new Date().toISOString());
+                }}
+                  className="flex-shrink-0 font-mono text-[9px] text-flamingo/60 hover:text-flamingo px-2 py-1.5 rounded-lg border border-flamingo/20 hover:bg-flamingo/5 transition-all whitespace-nowrap">
+                  +1 Visit
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40 block mb-1">Total Spend ($)</label>
+              <input type="number" min="0" step="0.01" value={form.spend_total || 0} onChange={e => update("spend_total", parseFloat(e.target.value) || 0)}
                 className="w-full p-2 rounded-lg border border-navy border-opacity-20 font-body text-sm" />
             </div>
             <div className="col-span-2">
               <label className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40 block mb-1">Dietary Preferences / Allergies</label>
               <input value={form.dietary} onChange={e => update("dietary", e.target.value)}
                 className="w-full p-2 rounded-lg border border-navy border-opacity-20 font-body text-sm" placeholder="Gluten-free, nut allergy..." />
+              <div className="flex gap-1.5 mt-2">
+                {["Gluten-Free", "Vegan", "Vegetarian", "Nut Allergy", "Dairy-Free", "Shellfish Allergy"].map(d => (
+                  <button key={d} type="button"
+                    onClick={() => {
+                      const current = form.dietary || "";
+                      if (!current.toLowerCase().includes(d.toLowerCase())) {
+                        update("dietary", current ? `${current}, ${d}` : d);
+                      }
+                    }}
+                    className="font-mono text-[8px] tracking-editorial uppercase text-navy/25 hover:text-flamingo hover:bg-flamingo/5 px-1.5 py-0.5 rounded transition-colors">
+                    +{d}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -401,6 +429,44 @@ const CRMPanel = () => {
           ))}
         </div>
       )}
+
+      {/* Birthday alerts */}
+      {(() => {
+        const now = new Date();
+        const upcoming = customers.filter(c => {
+          if (!c.birthday) return false;
+          try {
+            const bday = new Date(c.birthday);
+            if (isNaN(bday.getTime())) return false;
+            const thisYear = new Date(now.getFullYear(), bday.getMonth(), bday.getDate());
+            const diff = Math.ceil((thisYear - now) / (1000 * 60 * 60 * 24));
+            return diff >= 0 && diff <= 14;
+          } catch { return false; }
+        });
+        if (upcoming.length === 0) return null;
+        return (
+          <div className="mb-4 p-4 bg-amber-50/50 border border-amber-200/30 rounded-2xl">
+            <p className="font-mono text-[10px] tracking-editorial uppercase text-amber-700/60 mb-2 flex items-center gap-1.5">
+              <Calendar size={11} /> Upcoming Birthdays (next 14 days)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {upcoming.map(c => {
+                const bday = new Date(c.birthday);
+                const thisYear = new Date(now.getFullYear(), bday.getMonth(), bday.getDate());
+                const daysUntil = Math.ceil((thisYear - now) / (1000 * 60 * 60 * 24));
+                return (
+                  <span key={c.id} className="inline-flex items-center gap-1.5 font-body text-xs text-amber-800 bg-amber-100/60 px-2.5 py-1 rounded-lg">
+                    {c.name}
+                    <span className="font-mono text-[9px] text-amber-600/60">
+                      {daysUntil === 0 ? "today!" : `in ${daysUntil}d`}
+                    </span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Toolbar */}
       <div className="flex flex-wrap gap-3 mb-4 items-center">

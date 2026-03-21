@@ -2497,15 +2497,20 @@ const AdminPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Bottle Name" value={bottle.name} onChange={(v) => update(i, "name", v)} placeholder="Château Margaux 2018" required />
               <div>
-                <label className="block font-body text-navy text-sm font-bold mb-1">Category</label>
+                <label className="font-mono text-[11px] tracking-editorial uppercase text-navy/45 font-medium block mb-1">Category</label>
                 <select value={bottle.category} onChange={(e) => update(i, "category", e.target.value)}
-                  className="w-full p-3 rounded border border-navy border-opacity-20 font-body text-sm text-navy bg-white">
+                  className="form-input text-base">
                   <option value="wine">Wine</option>
                   <option value="beer">Beer</option>
+                  <option value="spirits">Spirits</option>
+                  <option value="cider">Cider</option>
+                  <option value="sake">Sake</option>
+                  <option value="non-alcoholic">Non-Alcoholic</option>
                 </select>
               </div>
               <Field label="Varietal / Style" value={bottle.varietal} onChange={(v) => update(i, "varietal", v)} placeholder="Cabernet Sauvignon" />
               <Field label="Region / Brewery" value={bottle.region} onChange={(v) => update(i, "region", v)} placeholder="Bordeaux, France" />
+              <Field label="Vintage / Year" value={bottle.vintage || ""} onChange={(v) => update(i, "vintage", v)} placeholder="2021" />
               <Field label="Price ($)" value={String(bottle.price)} onChange={(v) => update(i, "price", Number(v))} type="number" />
               <Field label="Toast Product ID" value={bottle.toastProductId || ""} onChange={(v) => update(i, "toastProductId", v || null)} placeholder="TOAST-PROD-ID" />
               <div className="flex items-center gap-3 mt-6">
@@ -2741,13 +2746,39 @@ const AdminPage = () => {
           )}
         </div>
 
-        {/* Review stats and search */}
+        {/* Review stats with rating distribution */}
+        {items.length > 0 && (
+          <div className="mb-4 p-4 bg-white rounded-2xl border border-navy/[0.06] shadow-sm">
+            <div className="flex items-center gap-6 mb-3 flex-wrap">
+              <span className="font-mono text-[10px] tracking-editorial uppercase text-navy/35">
+                {items.length} review{items.length !== 1 ? "s" : ""}
+              </span>
+              <span className="font-mono text-[10px] tracking-editorial uppercase text-navy/35">
+                avg {(items.reduce((sum, r) => sum + (r.rating || 0), 0) / items.length).toFixed(1)} stars
+              </span>
+            </div>
+            {/* Rating distribution */}
+            <div className="space-y-1">
+              {[5, 4, 3, 2, 1].map(star => {
+                const count = items.filter(r => r.rating === star).length;
+                const pct = items.length > 0 ? (count / items.length) * 100 : 0;
+                return (
+                  <div key={star} className="flex items-center gap-2">
+                    <span className="font-mono text-[9px] text-navy/25 w-4 text-right">{star}</span>
+                    <span className="text-amber-400 text-[10px]">★</span>
+                    <div className="flex-1 h-1.5 bg-navy/[0.05] rounded-full overflow-hidden">
+                      <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="font-mono text-[9px] text-navy/20 w-6 text-right">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {items.length > 0 && (
           <div className="flex items-center gap-4 mb-4 flex-wrap">
-            <span className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40">
-              {items.length} review{items.length !== 1 ? "s" : ""} · avg {(items.reduce((sum, r) => sum + (r.rating || 0), 0) / items.length).toFixed(1)} stars
-            </span>
-            <span className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-30">
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-navy/30">
               {items.filter(r => r.rating === 5).length} five-star
             </span>
           </div>
@@ -2828,11 +2859,25 @@ const AdminPage = () => {
           </div>
           {preview && (
             <div className="mt-4 border border-navy border-opacity-10 rounded-xl p-6 bg-white">
+              {/* Email header bar */}
+              <div className="flex items-center gap-3 mb-3 pb-3 border-b border-navy/10">
+                <div className="w-8 h-8 bg-flamingo/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="font-display text-flamingo text-xs font-bold">SF</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-body text-navy text-xs font-bold">Standard Fare</p>
+                  <p className="font-mono text-[9px] text-navy/30 truncate">hello@standardfaresaratoga.com</p>
+                </div>
+              </div>
               <p className="font-body text-navy font-bold text-lg mb-1">{subject || "(No subject)"}</p>
-              <hr className="my-3 border-navy border-opacity-10" />
-              <div className="font-body text-navy text-sm opacity-70 whitespace-pre-wrap">{body || "(No content)"}</div>
-              <hr className="my-3 border-navy border-opacity-10" />
-              <p className="font-mono text-xs text-navy opacity-30">Standard Fare · 21 Phila St · Saratoga Springs, NY</p>
+              <hr className="my-3 border-navy/10" />
+              <div className="font-body text-navy text-sm opacity-70 whitespace-pre-wrap leading-relaxed">{body || "(No content)"}</div>
+              <hr className="my-3 border-navy/10" />
+              <div className="text-center">
+                <p className="font-display text-navy/40 text-sm mb-1">Standard Fare</p>
+                <p className="font-mono text-[9px] text-navy/25">21 Phila St · Saratoga Springs, NY 12866</p>
+                <p className="font-mono text-[8px] text-navy/15 mt-2">Unsubscribe · Manage preferences</p>
+              </div>
             </div>
           )}
         </CollapsibleItem>
@@ -2840,14 +2885,14 @@ const AdminPage = () => {
         {drafts.length > 0 && (
           <CollapsibleItem label="Saved Drafts" sublabel={`${drafts.length} draft${drafts.length !== 1 ? "s" : ""}`} defaultOpen={false}>
             {drafts.map((d) => (
-              <div key={d.id} className="flex items-center justify-between p-3 bg-cream-warm rounded mb-2">
-                <div>
-                  <p className="font-body text-navy text-sm font-bold">{d.subject}</p>
-                  <p className="font-mono text-xs text-navy opacity-40">{new Date(d.savedAt).toLocaleDateString()}</p>
+              <div key={d.id} className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-navy/[0.06] mb-2 shadow-sm hover:shadow-admin transition-shadow">
+                <div className="flex-1 min-w-0">
+                  <p className="font-body text-navy text-sm font-bold truncate">{d.subject}</p>
+                  <p className="font-mono text-[10px] text-navy/30">{new Date(d.savedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => loadDraft(d)} className="text-flamingo text-xs font-body hover:underline">Load</button>
-                  <button onClick={() => removeDraft(d.id)} className="text-navy opacity-30 hover:opacity-60 text-xs font-body">Delete</button>
+                <div className="flex gap-2 flex-shrink-0 ml-3">
+                  <button onClick={() => loadDraft(d)} className="font-mono text-[10px] text-flamingo/60 hover:text-flamingo px-2.5 py-1 rounded-lg hover:bg-flamingo/5 transition-all">Load</button>
+                  <button onClick={() => removeDraft(d.id)} className="font-mono text-[10px] text-navy/20 hover:text-red-500 px-2 py-1 rounded-lg hover:bg-red-50 transition-all">Delete</button>
                 </div>
               </div>
             ))}
@@ -3369,12 +3414,15 @@ const AdminPage = () => {
         <Field label="Subtitle" value={config.subtitle || ""} onChange={(v) => update("subtitle", v)} placeholder="Chef's selections for the week" maxLength={80} />
 
         {items.map((item, i) => (
-          <CollapsibleItem key={item.id} label={item.name || "Untitled Dish"} sublabel={item.tag || ""} onRemove={() => removeItem(i)} defaultOpen={!item.name}>
-            <Field label="Dish Name" value={item.name} onChange={(v) => updateItem(i, "name", v)} placeholder="Pan-Seared Halibut" required />
+          <CollapsibleItem key={item.id} label={item.name || "Untitled Dish"} sublabel={`${item.tag || ""}${item.price ? ` · $${item.price}` : ""}`} thumbnail={item.imageUrl} onRemove={() => removeItem(i)} defaultOpen={!item.name}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label="Dish Name" value={item.name} onChange={(v) => updateItem(i, "name", v)} placeholder="Pan-Seared Halibut" required />
+              <Field label="Price" value={item.price} onChange={(v) => updateItem(i, "price", Number(v))} type="number" placeholder="38" />
+            </div>
             <Field label="Description" value={item.description} onChange={(v) => updateItem(i, "description", v)} placeholder="Spring peas, lemon beurre blanc, crispy capers" maxLength={120} />
-            <Field label="Price" value={item.price} onChange={(v) => updateItem(i, "price", Number(v))} type="number" placeholder="38" />
+            <ImageUploader label="Dish Photo (optional)" value={item.imageUrl || ""} onChange={(v) => updateItem(i, "imageUrl", v)} height="h-32" />
             <div className="mb-4">
-              <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-1">Tag</label>
+              <label className="font-mono text-[11px] tracking-editorial uppercase text-navy/45 font-medium block mb-1">Tag</label>
               <select value={item.tag || "New"} onChange={(e) => updateItem(i, "tag", e.target.value)}
                 className="form-input text-base">
                 {TAG_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
