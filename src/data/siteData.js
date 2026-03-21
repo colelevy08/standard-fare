@@ -20,9 +20,9 @@ const defaultSiteData = {
 
   // ── HERO SLIDESHOW ─────────────────────────────────────────────────────────
   heroSlides: [
-    { id: 1, url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1800&q=85", alt: "Standard Fare dining room" },
-    { id: 2, url: "https://images.unsplash.com/photo-1600891964092-4316c288032e?w=1800&q=85", alt: "Beautiful dish at Standard Fare" },
-    { id: 3, url: "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=1800&q=85", alt: "Craft cocktails at Standard Fare" },
+    { id: 1, url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-interior.jpg", alt: "Standard Fare interior with Daniel Fairley artwork" },
+    { id: 2, url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-discover-1.png", alt: "Standard Fare dining experience" },
+    { id: 3, url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-menu-unveil.jpg", alt: "Standard Fare menu and dishes" },
   ],
 
   // ── HERO CONTENT ───────────────────────────────────────────────────────────
@@ -56,7 +56,7 @@ const defaultSiteData = {
         bio: `Zac, a native of Louisiana, moved to New York City in 2009 to pursue a career in acting, performing on stages across NYC and the country. In 2015, he transitioned into the hospitality world, where his flair for storytelling found new expression through restaurant concepting and operations.\n\nZac has been instrumental in opening five acclaimed restaurants in New York City and London, including the flagship U.S. location of the UK-based Burger & Lobster. He worked alongside Michelin-starred chefs Dani García and Shaun Hergatt on high-profile projects such as CASA DANI at Hudson Yards and VESRTY in SoHo.\n\nIn the West Village, Zac led teams for Empellón Taqueria and da Toscano, where he worked under acclaimed chefs Alex Stupak and Michael Toscano. Da Toscano received national accolades from Esquire and Bloomberg for its inventive approach and intimate charm.\n\nAs founding partner of Bocage Champagne Bar in Saratoga Springs, Zac has shaped one of the region's most beloved destinations for sparkling wine and elevated hospitality. Under his creative direction, Bocage earned the New York State Restaurant Association's award for Best Social Media in 2023.\n\nWith Standard Fare, he brings sharp instincts and deep hospitality know-how to a concept that raises the bar — delivering comfort, style, and substance in a setting designed to leave a lasting impression.`,
       },
     ],
-    imageUrl: "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1200&q=80",
+    imageUrl: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-team.jpg",
     bocageUrl: "https://www.instagram.com/bocagechampagnebar/",
   },
 
