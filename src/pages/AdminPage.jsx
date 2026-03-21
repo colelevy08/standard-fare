@@ -1837,9 +1837,10 @@ const AdminPage = () => {
         </div>
         {/* Refresh status */}
         {(lastUpdated || newCount > 0) && (
-          <div className="mt-2 font-body text-xs text-navy opacity-40">
+          <div className="mt-3 font-body text-xs text-navy/35">
             {newCount > 0 && (
-              <span className="text-flamingo font-bold opacity-100 mr-3">
+              <span className="inline-flex items-center gap-1.5 text-flamingo font-bold mr-3 bg-flamingo/5 px-2.5 py-1 rounded-lg">
+                <span className="w-1.5 h-1.5 rounded-full bg-flamingo animate-pulse" />
                 {newCount} new article{newCount > 1 ? "s" : ""} found — hit Save to keep
               </span>
             )}
