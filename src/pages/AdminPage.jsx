@@ -21,7 +21,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Plus, Trash2, Save, ChevronDown, ChevronUp, Undo2, GripVertical, RefreshCw, Eye, Copy, Search, X, ChevronRight, ArrowUp, Check, AlertCircle } from "lucide-react";
+import { LogOut, Plus, Trash2, Save, ChevronDown, ChevronUp, Undo2, GripVertical, RefreshCw, Eye, Copy, Search, X, ChevronRight, ArrowUp, Check, AlertCircle, BarChart3, Users, Clock, Calendar, Globe, Command } from "lucide-react";
 import { useSite } from "../context/AdminContext";
 import PageLayout from "../components/layout/PageLayout";
 import ImageUploader from "../components/ui/ImageUploader";
@@ -32,6 +32,16 @@ import useInstagramFeed from "../hooks/useInstagramFeed";
 import PRESS_OUTLETS from "../data/pressOutlets";
 import usePressRefresh from "../hooks/usePressRefresh";
 import { DEFAULT_EVENT_PHOTOS } from "../data/eventPhotos";
+import CommandPalette from "../components/admin/CommandPalette";
+import ActivityLog from "../components/admin/ActivityLog";
+import CRMPanel from "../components/admin/CRMPanel";
+import ContentScheduler from "../components/admin/ContentScheduler";
+import SEOEditor from "../components/admin/SEOEditor";
+import AnalyticsDashboard from "../components/admin/AnalyticsDashboard";
+import useAdminSession from "../hooks/useAdminSession";
+import { logActivity } from "../lib/crmDb";
+import BulkActions, { useBulkSelect } from "../components/admin/BulkActions";
+import TemplatePicker, { EVENT_TEMPLATES, BLOG_TEMPLATES, MENU_ITEM_TEMPLATES } from "../components/admin/ContentTemplates";
 
 // ── Sortable wrapper for drag-and-drop reorder ──────────────────────────
 const SortableItem = ({ id, children }) => {
@@ -116,6 +126,14 @@ const ScrollToTop = () => {
 
 // ── Section definitions for grouping + quick-jump ─────────────────────
 const SECTION_GROUPS = [
+  { group: "Dashboard", icon: "📊", sections: [
+    { id: "analytics", title: "Analytics & Content Health" },
+    { id: "activitylog", title: "Activity Log" },
+    { id: "schedule", title: "Content Scheduler" },
+  ]},
+  { group: "CRM", icon: "👥", sections: [
+    { id: "crm", title: "Guest CRM" },
+  ]},
   { group: "Content", icon: "📝", sections: [
     { id: "hero", title: "Hero — Text, Buttons & Slideshow" },
     { id: "about", title: "Our Story & Team" },
@@ -150,6 +168,7 @@ const SECTION_GROUPS = [
     { id: "email", title: "Email Marketing" },
     { id: "sms", title: "SMS Text Club" },
     { id: "newsletter", title: "Newsletter" },
+    { id: "seo", title: "SEO & Social Sharing" },
   ]},
   { group: "Settings", icon: "⚙️", sections: [
     { id: "settings", title: "Site Settings" },
@@ -402,12 +421,17 @@ const AdminPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSection, setActiveSection] = useState("");
   const [toast, setToast] = useState(null); // { message, type }
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
 
-  // ── Wrap updateData to show save toast automatically ──────────────────
+  // ── Session management (auto-logout, timeout warning) ──────────────
+  const { showTimeoutWarning, timeRemaining, extendSession } = useAdminSession(isAdmin, logout);
+
+  // ── Wrap updateData to show save toast + log activity ─────────────────
   const saveWithToast = useCallback(async (key, value, label) => {
     try {
       await updateData(key, value);
       setToast({ message: label ? `${label} saved!` : "Saved!", type: "success" });
+      logActivity("updated", key, `Saved ${label || key}`);
     } catch (err) {
       setToast({ message: "Save failed — please try again.", type: "error" });
     }
@@ -440,6 +464,11 @@ const AdminPage = () => {
   // ── Keyboard shortcuts ────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e) => {
+      // Cmd+K / Ctrl+K — open command palette
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setShowCommandPalette(prev => !prev);
+      }
       // Cmd+S / Ctrl+S — click the nearest visible Save button
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
@@ -455,8 +484,14 @@ const AdminPage = () => {
         undo();
         setToast({ message: "Undone!", type: "success" });
       }
-      // Escape — close any open ConfirmDelete dialog
+      // Cmd+E / Ctrl+E — expand/collapse all sections
+      if ((e.metaKey || e.ctrlKey) && e.key === "e") {
+        e.preventDefault();
+        toggleAllSections();
+      }
+      // Escape — close command palette or ConfirmDelete dialog
       if (e.key === "Escape") {
+        if (showCommandPalette) { setShowCommandPalette(false); return; }
         const overlay = document.querySelector(".fixed.inset-0.z-\\[70\\]");
         if (overlay) overlay.click(); // triggers onCancel via overlay click handler
       }
@@ -1361,6 +1396,11 @@ const AdminPage = () => {
         )}
         <div className="flex gap-4 flex-wrap items-center">
           <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark"><Plus size={14} />Add Event</button>
+          <TemplatePicker templates={EVENT_TEMPLATES} label="From Template"
+            onSelect={(data) => {
+              setEvents([...events, { ...data, id: Date.now(), date: "", imageUrl: "", toastProductId: null, ticketUrl: "", capacity: data.capacity || null }]);
+              logActivity("created", "events", `Created event from template "${data.title}"`);
+            }} />
           <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Events</button>
           <button onClick={() => {
             const sorted = [...events].sort((a, b) => {
@@ -1373,6 +1413,18 @@ const AdminPage = () => {
             className="flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
             Sort by Date
           </button>
+          {pastCount > 0 && (
+            <button onClick={() => {
+              if (window.confirm(`Archive ${pastCount} past event(s)? They'll be removed from the list.`)) {
+                const now = new Date();
+                setEvents(events.filter(e => !e.date || new Date(e.date + "T23:59:59") >= now));
+                logActivity("deleted", "events", `Archived ${pastCount} past events`);
+              }
+            }}
+              className="flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
+              Archive {pastCount} Past
+            </button>
+          )}
         </div>
         </>
         )}
@@ -3162,6 +3214,15 @@ const AdminPage = () => {
         })}
         <div className="flex gap-4 flex-wrap">
           <button onClick={add} className="flex items-center gap-2 font-body text-sm text-flamingo"><Plus size={14} />Add Post</button>
+          <TemplatePicker templates={BLOG_TEMPLATES} label="From Template"
+            onSelect={(data) => {
+              setPosts([...posts, {
+                id: Date.now(), slug: "", date: new Date().toISOString().split("T")[0],
+                imageUrl: "", published: false, ...data,
+                tags: data.tags || [],
+              }]);
+              logActivity("created", "blog", `Created post from template "${data.title}"`);
+            }} />
           <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Blog</button>
           {posts.some(p => p.published === false) && (
             <button onClick={() => { setPosts(posts.map(p => ({ ...p, published: true }))); }}
@@ -3596,8 +3657,8 @@ const AdminPage = () => {
                   {dbReady ? "Cloud" : dbLoading ? "Connecting" : "Local"}
                 </span>
               </span>
-              <span className="hidden md:inline font-mono text-[10px] text-navy opacity-20" title="Keyboard shortcuts: Cmd+S to save, Cmd+Z to undo">
-                ⌘S save · ⌘Z undo
+              <span className="hidden md:inline font-mono text-[10px] text-navy opacity-20" title="Keyboard shortcuts: Cmd+K command palette, Cmd+S save, Cmd+Z undo, Cmd+E expand/collapse">
+                ⌘K search · ⌘S save · ⌘Z undo
               </span>
               {saveStatus === "saving" && (
                 <span className="font-mono text-[10px] text-flamingo opacity-60 animate-pulse">Saving...</span>
@@ -3643,6 +3704,24 @@ const AdminPage = () => {
               <span>{(siteData.faq || []).length} FAQ</span>
               <span>{Object.keys(siteData.menus || {}).length} menus</span>
             </div>
+          </div>
+
+          {/* ── DASHBOARD ───────────────────────────────────────────── */}
+          <div className="mb-8">
+            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+              <span>📊</span> Dashboard
+            </p>
+            <div className="mt-6"><AdminSection title="Analytics & Content Health" id="analytics" description="Content completeness, stats, and issues to address"><AnalyticsDashboard siteData={siteData} /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Activity Log" id="activitylog" description="Recent admin changes and edits"><ActivityLog /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Content Scheduler" id="schedule" description="Schedule content to publish or unpublish at specific dates"><ContentScheduler /></AdminSection></div>
+          </div>
+
+          {/* ── CRM ─────────────────────────────────────────────────── */}
+          <div className="mb-8">
+            <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-4 flex items-center gap-2">
+              <span>👥</span> Guest CRM
+            </p>
+            <div className="mt-6"><AdminSection title="Guest CRM" id="crm" description="Manage guest relationships, dietary preferences, VIPs, and notes"><CRMPanel /></AdminSection></div>
           </div>
 
           {/* ── CONTENT ─────────────────────────────────────────────── */}
@@ -3704,6 +3783,7 @@ const AdminPage = () => {
             <div className="mt-6"><AdminSection title="Email Marketing" id="email" description="Email campaign settings and templates"><EmailMarketingEditor /></AdminSection></div>
             <div className="mt-6"><AdminSection title="SMS Text Club" id="sms" description="Text club sign-up configuration"><SmsClubEditor /></AdminSection></div>
             <div className="mt-6"><AdminSection title="Newsletter" id="newsletter" description="Newsletter popup and sign-up settings"><NewsletterEditor /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="SEO & Social Sharing" id="seo" description="Meta titles, descriptions, and social share previews for every page"><SEOEditor siteData={siteData} updateData={updateData} saveWithToast={saveWithToast} /></AdminSection></div>
           </div>
 
           {/* ── SETTINGS ────────────────────────────────────────────── */}
@@ -3792,11 +3872,62 @@ const AdminPage = () => {
         </div>
       </div>
 
+      {/* ── Command Palette (Cmd+K) ─────────────────────────── */}
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        sections={ALL_SECTIONS}
+        onJump={handleJump}
+        actions={{
+          toggleDraftMode: () => setDraftMode(prev => !prev),
+          exportData: () => {
+            const json = JSON.stringify(siteData, null, 2);
+            const blob = new Blob([json], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `standard-fare-backup-${new Date().toISOString().split("T")[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            setToast({ message: "Backup downloaded!", type: "success" });
+          },
+          previewSite: () => window.open("/", "_blank"),
+          collapseAll: () => { if (!allCollapsed) toggleAllSections(); },
+          expandAll: () => { if (allCollapsed) toggleAllSections(); },
+          undo: canUndo ? () => { undo(); setToast({ message: "Undone!", type: "success" }); } : null,
+        }}
+      />
+
+      {/* ── Session Timeout Warning ───────────────────────────── */}
+      {showTimeoutWarning && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[90] bg-amber-500 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-4 animate-fade-in">
+          <Clock size={16} />
+          <span className="font-body text-sm">
+            Session expires in {timeRemaining}s due to inactivity
+          </span>
+          <button onClick={extendSession}
+            className="font-body text-sm font-bold underline underline-offset-2 hover:text-amber-100">
+            Stay Logged In
+          </button>
+        </div>
+      )}
+
       {/* ── Save Toast ─────────────────────────────────────────── */}
       {toast && <SaveToast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
 
       {/* ── Scroll to Top ──────────────────────────────────────── */}
       <ScrollToTop />
+
+      {/* ── Cmd+K hint ─────────────────────────────────────────── */}
+      <button
+        onClick={() => setShowCommandPalette(true)}
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 hidden xl:flex items-center gap-2
+                   bg-navy bg-opacity-80 text-cream text-xs font-mono px-4 py-2 rounded-full shadow-lg
+                   hover:bg-flamingo transition-colors opacity-40 hover:opacity-100"
+        title="Open command palette"
+      >
+        <Command size={12} /> ⌘K Quick Actions
+      </button>
 
       {/* Undo toast — appears after any save */}
       {canUndo && (
