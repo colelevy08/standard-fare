@@ -2580,31 +2580,41 @@ const AdminPage = () => {
     return (
       <div>
         {items.map((s, i) => (
-          <CollapsibleItem key={s.id} label={s.title || "New Special"} sublabel={s.active ? "Active" : "Inactive"} defaultOpen={!s.title} onRemove={() => remove(i)}>
+          <CollapsibleItem key={s.id}
+            label={<span className="flex items-center gap-2">
+              {s.title || "New Special"}
+              {s.active && <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />}
+            </span>}
+            sublabel={`${s.active ? "" : "Inactive · "}${s.days?.length || 0} day${(s.days?.length || 0) !== 1 ? "s" : ""}${s.startTime ? ` · ${s.startTime}–${s.endTime}` : ""}`}
+            defaultOpen={!s.title} onRemove={() => remove(i)}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Title" value={s.title} onChange={(v) => update(i, "title", v)} placeholder="Happy Hour" />
               <Field label="Description" value={s.description} onChange={(v) => update(i, "description", v)} placeholder="$8 cocktails, $5 drafts" />
               <Field label="Start Time" value={s.startTime} onChange={(v) => update(i, "startTime", v)} type="time" />
               <Field label="End Time" value={s.endTime} onChange={(v) => update(i, "endTime", v)} type="time" />
             </div>
-            <div className="mt-3">
-              <label className="block font-body text-navy text-sm font-bold mb-2">Active Days</label>
-              <div className="flex flex-wrap gap-2 items-center">
+            <div className="mt-4">
+              <label className="font-mono text-[11px] tracking-editorial uppercase text-navy/45 font-medium block mb-2">Active Days</label>
+              <div className="flex flex-wrap gap-1.5 items-center">
                 {allDays.map((day) => (
                   <button key={day} onClick={() => toggleDay(i, day)} type="button"
-                    className={`px-3 py-1 rounded-full text-xs font-mono uppercase ${s.days.includes(day) ? "bg-flamingo text-white" : "bg-navy bg-opacity-10 text-navy opacity-50"}`}>
-                    {day.slice(0, 3)}
+                    className={`w-10 h-10 rounded-xl text-[10px] font-mono uppercase font-bold transition-all ${
+                      s.days.includes(day)
+                        ? "bg-flamingo text-white shadow-sm"
+                        : "bg-navy/[0.04] text-navy/30 hover:bg-navy/[0.08]"
+                    }`}>
+                    {day.slice(0, 2)}
                   </button>
                 ))}
                 <button onClick={() => update(i, "days", s.days.length === 7 ? [] : [...allDays])} type="button"
-                  className="font-mono text-[10px] text-navy opacity-30 hover:opacity-60 ml-2 underline underline-offset-2">
-                  {s.days.length === 7 ? "Clear All" : "Select All"}
+                  className="font-mono text-[9px] text-navy/25 hover:text-flamingo ml-2 px-2 py-1 rounded-lg hover:bg-flamingo/5 transition-all">
+                  {s.days.length === 7 ? "Clear" : "All"}
                 </button>
               </div>
             </div>
-            <div className="flex items-center gap-3 mt-3">
+            <div className="flex items-center gap-3 mt-4">
               <input type="checkbox" checked={s.active} onChange={(e) => update(i, "active", e.target.checked)} className="accent-flamingo w-4 h-4" />
-              <span className="font-body text-sm text-navy">Active</span>
+              <span className="font-body text-sm text-navy">{s.active ? "Active — visible to guests" : "Inactive — hidden"}</span>
             </div>
             <button onClick={() => setItems([...items, { ...s, id: Date.now(), title: s.title + " (copy)" }])}
               className="mt-3 flex items-center gap-2 font-body text-xs text-navy opacity-40 hover:opacity-70 transition-opacity">
@@ -3681,18 +3691,24 @@ const AdminPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Max Full Buyout Capacity" value={String(config.maxCapacity || "")} onChange={(v) => update("maxCapacity", parseInt(v) || 0)} placeholder="60" />
           <Field label="Semi-Private Capacity" value={String(config.semiPrivateCapacity || "")} onChange={(v) => update("semiPrivateCapacity", parseInt(v) || 0)} placeholder="24" />
+          <Field label="Minimum Spend (optional)" value={config.minimumSpend || ""} onChange={(v) => update("minimumSpend", v)} placeholder="$2,500" helpText="Displayed on inquiry page if set" />
+          <Field label="Deposit Required (optional)" value={config.deposit || ""} onChange={(v) => update("deposit", v)} placeholder="25% non-refundable" />
+          <Field label="Inquiry Email" value={config.inquiryEmail || ""} onChange={(v) => update("inquiryEmail", v)} placeholder="events@standardfaresaratoga.com" validate={validateEmail} />
+          <Field label="Lead Time (days in advance)" value={String(config.leadTime || "")} onChange={(v) => update("leadTime", parseInt(v) || 0)} placeholder="14" helpText="Minimum notice required for private event bookings" />
         </div>
         <div>
-          <label className="font-mono text-xs tracking-editorial uppercase text-navy opacity-50 block mb-2">What's Included</label>
+          <label className="font-mono text-[11px] tracking-editorial uppercase text-navy/45 font-medium block mb-2">What's Included</label>
           {(config.includes || []).map((item, i) => (
             <div key={i} className="flex items-center gap-2 mb-2">
+              <span className="w-5 h-5 rounded-full bg-flamingo/10 text-flamingo flex items-center justify-center flex-shrink-0 text-xs font-bold">{i + 1}</span>
               <input value={item} onChange={(e) => updateInclude(i, e.target.value)}
-                className="flex-1 p-2 rounded border border-navy border-opacity-20 font-body text-sm text-navy" placeholder="Dedicated event coordinator" />
-              <button onClick={() => removeInclude(i)} className="text-navy opacity-30 hover:opacity-60"><Trash2 size={14} /></button>
+                className="flex-1 form-input py-2 text-sm" placeholder="Dedicated event coordinator" />
+              <button onClick={() => removeInclude(i)} className="text-navy/20 hover:text-red-500 transition-colors p-1"><Trash2 size={13} /></button>
             </div>
           ))}
-          <button onClick={addInclude} className="flex items-center gap-2 font-body text-xs text-flamingo mt-1"><Plus size={12} />Add Item</button>
+          <button onClick={addInclude} className="flex items-center gap-2 font-body text-xs text-flamingo hover:text-flamingo-dark mt-1 transition-colors"><Plus size={12} />Add Item</button>
         </div>
+        <ImageUploader label="Private Events Photo (shown on inquiry page)" value={config.imageUrl || ""} onChange={(v) => update("imageUrl", v)} height="h-40" />
         <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Private Events</button>
       </div>
     );
@@ -3708,13 +3724,20 @@ const AdminPage = () => {
 
     return (
       <div className="space-y-4">
-        <p className="font-body text-sm text-navy opacity-60 leading-relaxed">
-          Enable or disable the gift card balance check feature on the site.
+        <p className="font-body text-sm text-navy/50 leading-relaxed">
+          Manage the gift card page — balance checking, purchase amounts, and custom messaging.
         </p>
         <div className="flex items-center gap-3 mb-2">
           <input type="checkbox" checked={config.balanceCheckEnabled || false} onChange={(e) => update("balanceCheckEnabled", e.target.checked)} className="accent-flamingo w-4 h-4" />
           <span className="font-body text-sm text-navy font-bold">Enable Balance Check</span>
         </div>
+        <Field label="Gift Card Heading" value={config.heading || ""} onChange={(v) => update("heading", v)} placeholder="The Perfect Gift" />
+        <Field label="Gift Card Description" value={config.description || ""} onChange={(v) => update("description", v)} multiline placeholder="Give the gift of Creative American Dining..." maxLength={200} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="Suggested Amounts (comma-separated)" value={config.suggestedAmounts || ""} onChange={(v) => update("suggestedAmounts", v)} placeholder="25, 50, 75, 100, 150, 200" helpText="Display these as quick-select buttons on the gift card page" />
+          <Field label="Toast Gift Card Purchase URL" value={config.purchaseUrl || ""} onChange={(v) => update("purchaseUrl", v)} placeholder="https://order.toasttab.com/..." validate={validateUrl} />
+        </div>
+        <ImageUploader label="Gift Card Image (shown on page)" value={config.imageUrl || ""} onChange={(v) => update("imageUrl", v)} height="h-32" />
         <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Gift Cards</button>
       </div>
     );
