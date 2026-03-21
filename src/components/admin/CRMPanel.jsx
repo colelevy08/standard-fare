@@ -217,9 +217,9 @@ const CustomerForm = ({ customer, onSave, onCancel }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-40 animate-fade-in"
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
       onClick={onCancel} role="dialog" aria-modal="true" aria-label="Customer form">
-      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[85vh] overflow-y-auto"
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl p-4 sm:p-6 max-w-lg w-full sm:mx-4 max-h-[90vh] sm:max-h-[85vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}>
         <h3 className="font-display text-navy text-lg mb-4">{customer?.id ? "Edit Guest" : "Add New Guest"}</h3>
 

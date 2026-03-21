@@ -23,7 +23,7 @@
   .form-input { @apply w-full px-4 py-3 rounded-lg border border-navy border-opacity-15 bg-white text-navy font-body
     focus:outline-none focus:ring-2 focus:ring-flamingo focus:ring-opacity-30 focus:border-flamingo
     transition-all duration-200 placeholder:text-navy placeholder:opacity-25; }
-  .admin-card { @apply bg-white rounded-2xl shadow-sm border border-navy border-opacity-[0.06] p-7 mb-6
+  .admin-card { @apply bg-white rounded-2xl shadow-sm border border-navy border-opacity-[0.06] p-4 sm:p-7 mb-4 sm:mb-6
     transition-shadow duration-300 hover:shadow-md; }
 }
 

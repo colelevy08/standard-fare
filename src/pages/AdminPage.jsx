@@ -75,7 +75,7 @@ const SaveToast = ({ message, type = "success", onDismiss }) => {
     return () => clearTimeout(timer);
   }, [onDismiss]);
   return (
-    <div role="status" aria-live="polite" className={`fixed bottom-20 right-6 z-[60] animate-scale-in flex items-center gap-3 px-5 py-3.5 rounded-2xl font-body text-sm backdrop-blur-sm
+    <div role="status" aria-live="polite" className={`fixed bottom-20 left-3 right-3 sm:left-auto sm:right-6 z-[60] animate-scale-in flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl font-body text-sm backdrop-blur-sm
       ${type === "success"
         ? "bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg shadow-green-700/20"
         : "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-600/20"}`}>
@@ -99,7 +99,7 @@ const ConfirmDelete = ({ itemName, onConfirm, onCancel }) => {
   }, [onCancel]);
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-navy/30 backdrop-blur-sm animate-fade-in" onClick={onCancel} role="dialog" aria-modal="true" aria-label={`Delete ${itemName}`}>
-      <div className="bg-white rounded-2xl shadow-admin-lg p-7 max-w-sm mx-4 animate-scale-in" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-admin-lg p-5 sm:p-7 max-w-sm mx-3 sm:mx-4 w-full animate-scale-in" onClick={e => e.stopPropagation()}>
         <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
           <Trash2 size={20} className="text-red-500" />
         </div>
@@ -327,7 +327,7 @@ const CollapsibleItem = ({ label, sublabel, defaultOpen = false, onRemove, child
         />
       )}
       {/* Header row — always visible */}
-      <div className={`flex items-center justify-between px-5 py-3.5 cursor-pointer select-none transition-colors duration-200 ${open ? "bg-cream-warm" : "bg-cream-warm/50 hover:bg-cream-warm"}`}
+      <div className={`flex items-center justify-between px-3 sm:px-5 py-3 sm:py-3.5 cursor-pointer select-none transition-colors duration-200 ${open ? "bg-cream-warm" : "bg-cream-warm/50 hover:bg-cream-warm"}`}
         onClick={() => setOpen(!open)}
         role="button"
         tabIndex={0}
@@ -368,7 +368,7 @@ const CollapsibleItem = ({ label, sublabel, defaultOpen = false, onRemove, child
       </div>
       {/* Expandable detail area */}
       {open && (
-        <div className="px-5 py-5 border-t border-navy/[0.06] bg-white admin-collapse-enter">
+        <div className="px-3 sm:px-5 py-4 sm:py-5 border-t border-navy/[0.06] bg-white admin-collapse-enter">
           {children}
         </div>
       )}
@@ -3792,11 +3792,11 @@ const AdminPage = () => {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <PageLayout>
-      <div className="admin-hero-gradient pt-32 pb-14 text-center relative overflow-hidden">
+      <div className="admin-hero-gradient pt-24 sm:pt-32 pb-10 sm:pb-14 text-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
-        <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3 relative">Owner Portal</p>
-        <h1 className="font-display text-cream text-4xl relative">Manage Website</h1>
-        <span className="block w-20 h-0.5 bg-gradient-to-r from-transparent via-flamingo to-transparent mx-auto mt-6 relative" />
+        <p className="font-mono text-flamingo text-[10px] sm:text-xs tracking-editorial uppercase mb-2 sm:mb-3 relative">Owner Portal</p>
+        <h1 className="font-display text-cream text-3xl sm:text-4xl relative">Manage Website</h1>
+        <span className="block w-16 sm:w-20 h-0.5 bg-gradient-to-r from-transparent via-flamingo to-transparent mx-auto mt-4 sm:mt-6 relative" />
       </div>
 
       {/* ── Quick-Jump Sidebar ────────────────────────────────── */}
@@ -3807,8 +3807,8 @@ const AdminPage = () => {
         onSearchChange={setSearchQuery}
       />
 
-      <div className="section-padding bg-cream">
-        <div className="section-container max-w-4xl px-4 md:px-12 xl:ml-56">
+      <div className="py-8 sm:py-12 md:section-padding bg-cream">
+        <div className="section-container max-w-4xl px-3 sm:px-4 md:px-12 xl:ml-56">
 
           {/* Draft mode banner */}
           {draftMode && (
@@ -3837,50 +3837,50 @@ const AdminPage = () => {
           )}
 
           {/* Top bar — Logout + How It Works */}
-          <div className="flex justify-between items-center mb-8 flex-wrap gap-3">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
               <Link
                 to="/admin/how-it-works"
-                className="inline-flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark
-                           border border-flamingo border-opacity-30 hover:border-flamingo rounded-lg px-4 py-2 transition-all"
+                className="inline-flex items-center gap-1.5 font-body text-xs sm:text-sm text-flamingo hover:text-flamingo-dark
+                           border border-flamingo/30 hover:border-flamingo rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 transition-all"
               >
-                📖 How It Works
+                📖 <span className="hidden sm:inline">How It Works</span><span className="sm:hidden">Guide</span>
               </Link>
               <Link
                 to="/admin/value"
-                className="inline-flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark
-                           border border-flamingo border-opacity-30 hover:border-flamingo rounded-lg px-4 py-2 transition-all"
+                className="inline-flex items-center gap-1.5 font-body text-xs sm:text-sm text-flamingo hover:text-flamingo-dark
+                           border border-flamingo/30 hover:border-flamingo rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 transition-all"
               >
-                💰 How It Brings Value
+                💰 <span className="hidden sm:inline">How It Brings Value</span><span className="sm:hidden">Value</span>
               </Link>
               {!draftMode && (
                 <button
                   onClick={() => setDraftMode(true)}
-                  className="inline-flex items-center gap-2 font-body text-sm text-navy opacity-50 hover:opacity-80
-                             border border-navy border-opacity-20 hover:border-navy rounded-lg px-4 py-2 transition-all"
+                  className="inline-flex items-center gap-1.5 font-body text-xs sm:text-sm text-navy/50 hover:text-navy/80
+                             border border-navy/15 hover:border-navy/30 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 transition-all"
                 >
-                  Draft Mode
+                  Draft
                 </button>
               )}
               <button
                 onClick={toggleAllSections}
-                className="inline-flex items-center gap-2 font-body text-sm text-navy opacity-50 hover:opacity-80
-                           border border-navy border-opacity-20 hover:border-navy rounded-lg px-4 py-2 transition-all"
+                className="inline-flex items-center gap-1.5 font-body text-xs sm:text-sm text-navy/50 hover:text-navy/80
+                           border border-navy/15 hover:border-navy/30 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 transition-all"
               >
                 {allCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                 {allCollapsed ? "Expand All" : "Collapse All"}
               </button>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               {/* Connection status dot */}
               <span className="flex items-center gap-1" title={dbReady ? "Connected to cloud database" : dbLoading ? "Connecting..." : "Local storage only"}>
                 <span className={`w-1.5 h-1.5 rounded-full ${dbReady ? "bg-green-500" : dbLoading ? "bg-amber-400 animate-pulse" : "bg-navy opacity-20"}`} />
-                <span className="hidden md:inline font-mono text-[10px] text-navy opacity-20">
-                  {dbReady ? "Cloud" : dbLoading ? "Connecting" : "Local"}
+                <span className="hidden sm:inline font-mono text-[10px] text-navy/20">
+                  {dbReady ? "Cloud" : dbLoading ? "..." : "Local"}
                 </span>
               </span>
-              <span className="hidden md:inline font-mono text-[10px] text-navy opacity-20" title="Keyboard shortcuts: Cmd+K command palette, Cmd+S save, Cmd+Z undo, Cmd+E expand/collapse">
-                ⌘K search · ⌘S save · ⌘Z undo
+              <span className="hidden lg:inline font-mono text-[10px] text-navy/20" title="Keyboard shortcuts: Cmd+K command palette, Cmd+S save, Cmd+Z undo, Cmd+E expand/collapse">
+                ⌘K · ⌘S · ⌘Z
               </span>
               {saveStatus === "saving" && (
                 <span className="font-mono text-[10px] text-flamingo opacity-60 animate-pulse">Saving...</span>
@@ -3904,17 +3904,17 @@ const AdminPage = () => {
               )}
               <button
                 onClick={() => { logout(); navigate("/"); }}
-                className="flex items-center gap-2 font-body text-sm text-navy opacity-50 hover:opacity-80 hover:text-flamingo transition-all"
+                className="flex items-center gap-1.5 font-body text-xs sm:text-sm text-navy/50 hover:text-flamingo transition-all"
               >
                 <LogOut size={14} />
-                Log Out
+                <span className="hidden sm:inline">Log Out</span>
               </button>
             </div>
           </div>
 
           {/* ── Section summary ─────────────────────────────────────── */}
-          <div className="mb-8 p-5 bg-white rounded-2xl border border-navy/[0.06] shadow-admin admin-pattern-bg">
-            <div className="flex flex-wrap gap-x-6 gap-y-2 text-[10px] font-mono tracking-editorial uppercase text-navy/35">
+          <div className="mb-6 sm:mb-8 p-4 sm:p-5 bg-white rounded-2xl border border-navy/[0.06] shadow-admin admin-pattern-bg overflow-x-auto scrollbar-hide">
+            <div className="flex gap-x-4 sm:gap-x-6 gap-y-2 text-[9px] sm:text-[10px] font-mono tracking-editorial uppercase text-navy/35 min-w-max sm:min-w-0 sm:flex-wrap">
               <span>{(siteData.events || []).length} events</span>
               <span>{(siteData.blog || []).length} blog posts</span>
               <span>{(siteData.gallery || []).length} gallery items</span>
@@ -4030,7 +4030,7 @@ const AdminPage = () => {
           </div>
 
           {/* Storage status + Reset to Defaults */}
-          <div className="mt-12 border border-flamingo/20 rounded-2xl p-7 bg-white shadow-admin">
+          <div className="mt-8 sm:mt-12 border border-flamingo/20 rounded-2xl p-4 sm:p-7 bg-white shadow-admin">
             <p className="font-mono text-flamingo/60 text-xs tracking-editorial uppercase mb-3">Storage Status</p>
             <p className="font-body text-sm text-navy opacity-60 leading-relaxed mb-2">
               {dbLoading
@@ -4134,7 +4134,7 @@ const AdminPage = () => {
 
       {/* ── Session Timeout Warning ───────────────────────────── */}
       {showTimeoutWarning && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[90] bg-amber-500 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-4 animate-fade-in">
+        <div className="fixed top-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-[90] bg-amber-500 text-white px-4 sm:px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 sm:gap-4 animate-fade-in">
           <Clock size={16} />
           <span className="font-body text-sm">
             Session expires in {timeRemaining}s due to inactivity
@@ -4155,9 +4155,9 @@ const AdminPage = () => {
       {/* ── Cmd+K hint ─────────────────────────────────────────── */}
       <button
         onClick={() => setShowCommandPalette(true)}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 hidden xl:flex items-center gap-2
-                   bg-navy bg-opacity-80 text-cream text-xs font-mono px-4 py-2 rounded-full shadow-lg
-                   hover:bg-flamingo transition-colors opacity-40 hover:opacity-100"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 hidden lg:flex items-center gap-2
+                   bg-navy/70 backdrop-blur-sm text-cream text-xs font-mono px-4 py-2 rounded-full shadow-admin-lg
+                   hover:bg-flamingo transition-all opacity-30 hover:opacity-100"
         title="Open command palette"
       >
         <Command size={12} /> ⌘K Quick Actions
@@ -4165,13 +4165,13 @@ const AdminPage = () => {
 
       {/* Undo toast — appears after any save */}
       {canUndo && (
-        <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
+        <div className="fixed bottom-6 right-3 sm:right-6 z-50 animate-fade-in">
           <button
             onClick={undo}
-            className="flex items-center gap-2 bg-navy/90 backdrop-blur-sm text-cream font-body text-sm px-5 py-3
+            className="flex items-center gap-2 bg-navy/90 backdrop-blur-sm text-cream font-body text-xs sm:text-sm px-4 sm:px-5 py-2.5 sm:py-3
                        rounded-2xl shadow-admin-lg hover:bg-flamingo hover:scale-105 transition-all duration-200"
           >
-            <Undo2 size={16} /> Undo Last Save
+            <Undo2 size={14} /> <span className="hidden sm:inline">Undo Last Save</span><span className="sm:hidden">Undo</span>
           </button>
         </div>
       )}

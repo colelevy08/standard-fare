@@ -140,9 +140,9 @@ const CommandPalette = ({ isOpen, onClose, sections, onJump, actions }) => {
   let flatIdx = -1;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-start justify-center pt-[15vh] bg-black bg-opacity-40 animate-fade-in"
+    <div className="fixed inset-0 z-[80] flex items-start justify-center pt-[10vh] sm:pt-[15vh] bg-black/40 backdrop-blur-sm animate-fade-in"
       onClick={onClose} role="dialog" aria-modal="true" aria-label="Command Palette">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-2 sm:mx-4 overflow-hidden"
         onClick={e => e.stopPropagation()}>
 
         {/* Search input */}
