@@ -2979,18 +2979,19 @@ const AdminPage = () => {
           Names must match exactly as they appear in the menu or bottle shop.
         </p>
         {items.map((item, i) => (
-          <div key={i} className="flex items-center gap-3 mb-3 bg-cream-warm rounded-lg p-3">
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div key={i} className="flex items-center gap-3 mb-2 bg-white rounded-xl p-3.5 border border-navy/[0.06] shadow-sm hover:shadow-admin transition-shadow">
+            <span className="w-6 h-6 rounded-lg bg-flamingo/10 text-flamingo flex items-center justify-center flex-shrink-0 font-mono text-[10px] font-bold">{i + 1}</span>
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
               <input value={item.name} onChange={(e) => updateItem(i, "name", e.target.value)}
                 placeholder="Item name (must match exactly)"
-                className="p-2 rounded border border-navy border-opacity-20 font-body text-sm text-navy bg-white" />
+                className="form-input py-2 text-sm" />
               <select value={item.category} onChange={(e) => updateItem(i, "category", e.target.value)}
-                className="p-2 rounded border border-navy border-opacity-20 font-body text-sm text-navy bg-white">
+                className="form-input py-2 text-sm">
                 <option value="menu">Menu Item</option>
                 <option value="bottles">Bottle</option>
               </select>
             </div>
-            <button onClick={() => remove(i)} className="text-navy opacity-30 hover:opacity-60"><Trash2 size={14} /></button>
+            <button onClick={() => remove(i)} className="text-navy/20 hover:text-red-500 transition-colors p-1"><Trash2 size={13} /></button>
           </div>
         ))}
         <div className="flex gap-4 flex-wrap">
@@ -3043,14 +3044,21 @@ const AdminPage = () => {
         </p>
 
         {/* Auto-pull status & force refresh */}
-        <div className="bg-cream-warm rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <p className="font-body text-sm text-navy font-semibold">Auto-Pull from Instagram</p>
+        <div className="bg-white rounded-2xl p-5 mb-6 border border-navy/[0.06] shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-sm font-bold">IG</span>
+              </div>
+              <div>
+                <p className="font-body text-sm text-navy font-semibold">Auto-Pull from Instagram</p>
+                <p className="font-mono text-[9px] text-navy/30">@standardfaresaratoga</p>
+              </div>
+            </div>
             <button onClick={handleForceRefresh} disabled={igLoading}
-              className="btn-ghost flex items-center gap-2 py-1.5 px-3 text-xs disabled:opacity-50"
-              title="Refresh now — pulls the 3 most recent posts from @standardfaresaratoga">
-              <RefreshCw size={13} className={igLoading ? "animate-spin" : ""} />
-              {igLoading ? "Refreshing…" : "Refresh Now"}
+              className="font-body text-xs text-navy/50 hover:text-flamingo px-3 py-1.5 rounded-xl border border-navy/10 hover:border-flamingo/30 transition-all flex items-center gap-1.5 disabled:opacity-30">
+              <RefreshCw size={12} className={igLoading ? "animate-spin" : ""} />
+              {igLoading ? "Refreshing…" : "Refresh"}
             </button>
           </div>
           {igLastFetched && (
