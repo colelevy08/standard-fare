@@ -10,13 +10,13 @@ import PreviewGate from "./components/PreviewGate"; // Password gate for owner p
 import CartDrawer from "./components/cart/CartDrawer";
 import ScrollToTop from "./components/ScrollToTop";
 
-// Critical page — loaded eagerly for fast first paint
+// Critical pages — loaded eagerly for fast first paint on most common routes
 import HomePage from "./pages/HomePage";
+import MenuPage from "./pages/MenuPage";
+import EventsPage from "./pages/EventsPage";
 
 // All other pages lazy-loaded — only fetched when the user navigates to them.
 // This dramatically reduces the initial JS bundle size.
-const MenuPage          = lazy(() => import("./pages/MenuPage"));
-const EventsPage        = lazy(() => import("./pages/EventsPage"));
 const GalleryPage       = lazy(() => import("./pages/GalleryPage"));
 const PrintsPage        = lazy(() => import("./pages/PrintsPage"));
 const PressPage         = lazy(() => import("./pages/PressPage"));
