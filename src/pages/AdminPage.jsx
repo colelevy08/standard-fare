@@ -3488,12 +3488,24 @@ const AdminPage = () => {
         <Field label="Launch Date" value={config.launchDate || ""} onChange={(v) => update("launchDate", v)} placeholder="2026-04-15" validate={validateDate} helpText="The date the new menu goes live. Countdown shows days remaining." />
         {config.launchDate && /^\d{4}-\d{2}-\d{2}$/.test(config.launchDate) && (() => {
           const diff = Math.ceil((new Date(config.launchDate + "T00:00:00") - new Date()) / (1000 * 60 * 60 * 24));
-          return diff > 0 ? (
-            <p className="font-mono text-[11px] text-flamingo opacity-60">{diff} day{diff !== 1 ? "s" : ""} until launch</p>
-          ) : diff === 0 ? (
-            <p className="font-mono text-[11px] text-green-700 opacity-70 font-bold">Launching today!</p>
-          ) : (
-            <p className="font-mono text-[11px] text-amber-600 opacity-60">This date has passed ({Math.abs(diff)} day{Math.abs(diff) !== 1 ? "s" : ""} ago)</p>
+          return (
+            <div className={`p-4 rounded-2xl border flex items-center gap-4 ${
+              diff > 0 ? "bg-flamingo/[0.03] border-flamingo/15" : diff === 0 ? "bg-green-50 border-green-200" : "bg-amber-50/50 border-amber-200/30"
+            }`}>
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                diff > 0 ? "bg-flamingo/10" : diff === 0 ? "bg-green-100" : "bg-amber-100"
+              }`}>
+                <span className={`font-display text-2xl ${diff > 0 ? "text-flamingo" : diff === 0 ? "text-green-600" : "text-amber-600"}`}>
+                  {Math.abs(diff)}
+                </span>
+              </div>
+              <div>
+                <p className={`font-body text-sm font-bold ${diff > 0 ? "text-flamingo" : diff === 0 ? "text-green-700" : "text-amber-700"}`}>
+                  {diff > 0 ? `${diff} day${diff !== 1 ? "s" : ""} until launch` : diff === 0 ? "Launching today!" : "Date has passed"}
+                </p>
+                <p className="font-mono text-[10px] text-navy/30">{config.launchDate}</p>
+              </div>
+            </div>
           );
         })()}
         <Field label="Teaser Text" value={config.teaser || ""} onChange={(v) => update("teaser", v)} placeholder="New seasonal dishes dropping soon..." maxLength={100} />
@@ -3516,7 +3528,21 @@ const AdminPage = () => {
 
     return (
       <div className="space-y-4">
-        <p className="font-body text-sm text-navy opacity-60 leading-relaxed">
+        {/* Signup count card */}
+        {storedSignups > 0 && (
+          <div className="p-4 bg-green-50/50 border border-green-200/30 rounded-2xl flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-green-100 flex items-center justify-center flex-shrink-0">
+              <span className="font-display text-green-700 text-xl">{storedSignups}</span>
+            </div>
+            <div>
+              <p className="font-body text-sm text-green-800 font-bold">Email Signup{storedSignups !== 1 ? "s" : ""} Collected</p>
+              <p className="font-body text-xs text-green-700/50">
+                {config.provider ? `Syncing to ${config.provider}` : "Stored locally — connect Mailchimp or Klaviyo to sync"}
+              </p>
+            </div>
+          </div>
+        )}
+        <p className="font-body text-sm text-navy/50 leading-relaxed">
           Email signup form appears on the homepage. Connects to Mailchimp or Klaviyo when configured.
           Until then, signups are stored in the browser.
         </p>
@@ -3541,11 +3567,6 @@ const AdminPage = () => {
         <p className="font-mono text-[11px] text-navy opacity-40">
           API keys are set as Vercel environment variables (MAILCHIMP_API_KEY or KLAVIYO_API_KEY).
         </p>
-        {storedSignups > 0 && (
-          <p className="font-body text-sm text-green-700">
-            {storedSignups} email signup{storedSignups !== 1 ? "s" : ""} stored locally (waiting for provider setup).
-          </p>
-        )}
         <button onClick={save} className="btn-primary flex items-center gap-2"><Save size={14} />Save Email Settings</button>
       </div>
     );
