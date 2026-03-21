@@ -751,10 +751,12 @@ const AdminPage = () => {
           <button onClick={saveOverride} className="btn-primary flex items-center gap-2 mt-3"><Save size={14} />Save Override</button>
         </div>
 
-        {hours.map((h, i) => (
+        {hours.map((h, i) => {
+          const isToday = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][new Date().getDay()] === h.day;
+          return (
           <CollapsibleItem
             key={h.day}
-            label={h.day}
+            label={isToday ? `${h.day} (today)` : h.day}
             sublabel={h.open === "Closed" || h.open === "Gone Fishing" || !h.open ? h.open || "Closed" : `${h.open} – ${h.close}`}
             defaultOpen={false}
           >
@@ -792,7 +794,8 @@ const AdminPage = () => {
               )}
             </div>
           </CollapsibleItem>
-        ))}
+        );
+        })}
         <button onClick={save} className="btn-primary flex items-center gap-2 mt-4"><Save size={14} />Save Hours</button>
       </div>
     );
@@ -1355,14 +1358,20 @@ const AdminPage = () => {
         {/* Event stats */}
         {events.length > 0 && (
           <div className="flex gap-4 mb-4 flex-wrap items-center">
-            <span className="font-mono text-[10px] tracking-editorial uppercase text-navy opacity-40">{events.length} total</span>
-            <span className="font-mono text-[10px] tracking-editorial uppercase text-green-700 opacity-60">{upcomingCount} upcoming</span>
-            {pastCount > 0 && <span className="font-mono text-[10px] tracking-editorial uppercase text-amber-600 opacity-60">{pastCount} past</span>}
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-navy/35">{events.length} total</span>
+            <span className="font-mono text-[10px] tracking-editorial uppercase text-green-600/60 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />{upcomingCount} upcoming
+            </span>
+            {pastCount > 0 && (
+              <span className="font-mono text-[10px] tracking-editorial uppercase text-amber-600/60 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />{pastCount} past
+              </span>
+            )}
             <div className="flex gap-1 ml-auto">
               {["all", "upcoming", "past"].map(f => (
                 <button key={f} onClick={() => setEventFilter(f)}
-                  className={`font-mono text-[10px] tracking-editorial uppercase px-2 py-1 rounded transition-colors
-                    ${eventFilter === f ? "bg-navy text-cream" : "text-navy opacity-40 hover:opacity-70"}`}>
+                  className={`font-mono text-[10px] tracking-editorial uppercase px-2.5 py-1 rounded-lg transition-all ${
+                    eventFilter === f ? "bg-navy text-cream shadow-sm" : "text-navy/35 hover:text-navy/60 hover:bg-navy/[0.04]"}`}>
                   {f}
                 </button>
               ))}
@@ -1573,7 +1582,7 @@ const AdminPage = () => {
     return (
       <div>
         {/* Sync banner */}
-        <div className="mb-4 bg-cream-warm border border-navy border-opacity-10 rounded-lg p-4">
+        <div className="mb-4 bg-white border border-navy/[0.08] rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <p className="font-body text-sm text-navy font-bold">Auto-Import from poemdexter.com</p>
@@ -2615,23 +2624,33 @@ const AdminPage = () => {
     const [gCount, setGCount] = useState(gr.count);
     const saveRating = () => saveWithToast("googleRating", { rating: parseFloat(gRating) || 0, count: parseInt(gCount, 10) || 0 }, "Google Rating");
     return (
-      <div className="mb-4 bg-cream-warm border border-navy border-opacity-10 rounded-lg p-4">
-        <p className="font-body text-sm text-navy font-bold mb-1">Google Aggregate Rating</p>
-        <p className="font-body text-xs text-navy opacity-50 mb-3">
+      <div className="mb-4 bg-white border border-navy/[0.08] rounded-2xl p-5 shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-0.5">
+            {[1,2,3,4,5].map(star => (
+              <span key={star} className={`text-lg ${star <= Math.round(gRating) ? "text-amber-400" : "text-navy/10"}`}>★</span>
+            ))}
+          </div>
+          <span className="font-display text-navy text-2xl">{parseFloat(gRating || 0).toFixed(1)}</span>
+          <span className="font-mono text-[10px] text-navy/30">({gCount} reviews)</span>
+        </div>
+        <p className="font-body text-xs text-navy/40 mb-3">
           Shown above the reviews section. Update when your Google rating changes.
         </p>
         <div className="flex items-center gap-4 flex-wrap">
           <label className="flex items-center gap-2">
-            <span className="font-body text-xs text-navy">Rating</span>
+            <span className="font-mono text-[10px] text-navy/40 uppercase tracking-editorial">Rating</span>
             <input type="number" step="0.1" min="1" max="5" value={gRating} onChange={(e) => setGRating(e.target.value)}
-              className="input-field w-20 text-center" />
+              className="form-input w-20 text-center py-2 text-sm" />
           </label>
           <label className="flex items-center gap-2">
-            <span className="font-body text-xs text-navy">Total reviews</span>
+            <span className="font-mono text-[10px] text-navy/40 uppercase tracking-editorial">Reviews</span>
             <input type="number" min="0" value={gCount} onChange={(e) => setGCount(e.target.value)}
-              className="input-field w-24 text-center" />
+              className="form-input w-24 text-center py-2 text-sm" />
           </label>
-          <button onClick={saveRating} className="btn-primary py-2 px-4 text-xs">Save Rating</button>
+          <button onClick={saveRating} className="bg-flamingo text-white font-body text-xs px-4 py-2 rounded-xl hover:bg-flamingo-dark transition-colors flex items-center gap-2">
+            <Save size={12} /> Save
+          </button>
         </div>
       </div>
     );
@@ -2696,16 +2715,22 @@ const AdminPage = () => {
         <GoogleRatingEditor />
 
         {/* Google sync banner */}
-        <div className="mb-4 bg-cream-warm border border-navy border-opacity-10 rounded-lg p-4">
+        <div className="mb-4 bg-white border border-navy/[0.08] rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <p className="font-body text-sm text-navy font-bold">Auto-Import Google Reviews</p>
-              <p className="font-body text-xs text-navy opacity-50">
-                Reviews are pulled from Google automatically once per day. No API key needed.
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-sm">G</span>
+              </div>
+              <div>
+                <p className="font-body text-sm text-navy font-bold">Auto-Import Google Reviews</p>
+                <p className="font-body text-xs text-navy/40">
+                  Pulled automatically once per day. No API key needed.
+                </p>
+              </div>
             </div>
             <button onClick={syncGoogle} disabled={syncing}
-              className="btn-ghost py-2 px-4 text-xs flex items-center gap-2 disabled:opacity-40">
+              className="font-body text-xs text-navy/50 hover:text-flamingo px-4 py-2 rounded-xl border border-navy/10 hover:border-flamingo/30 transition-all flex items-center gap-2 disabled:opacity-30">
+              <RefreshCw size={12} className={syncing ? "animate-spin" : ""} />
               {syncing ? "Syncing..." : "Pull from Google"}
             </button>
           </div>
