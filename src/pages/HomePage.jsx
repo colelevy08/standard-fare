@@ -131,45 +131,58 @@ const WeeklyFeatures = () => {
   const wf = siteData.weeklyFeatures || {};
   if (!wf.enabled || !wf.items || wf.items.length === 0) return null;
 
+  // Sort: "New" tagged items first, then rest in original order
+  const sortedItems = [...wf.items].sort((a, b) => {
+    if (a.tag === "New" && b.tag !== "New") return -1;
+    if (a.tag !== "New" && b.tag === "New") return 1;
+    return 0;
+  });
+
   return (
     <section className="section-padding bg-cream">
-      <div className="section-container">
-        <div className="text-center mb-10">
-          <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">
-            {wf.subtitle || "Chef's selections for the week"}
-          </p>
-          <h2 className="font-display text-navy text-3xl md:text-4xl">
-            {wf.headline || "This Week's Features"}
-          </h2>
-          <span className="section-divider" />
-        </div>
+      <div className="text-center mb-10 px-6">
+        <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-3">
+          {wf.subtitle || "Chef's selections for the week"}
+        </p>
+        <h2 className="font-display text-navy text-3xl md:text-4xl">
+          {wf.headline || "This Week's Features"}
+        </h2>
+        <span className="section-divider" />
+      </div>
 
-        <ProfileCardModal
-          item={selected ? { ...selected, type: "feature" } : null}
-          onClose={() => setSelected(null)}
-        />
+      <ProfileCardModal
+        item={selected ? { ...selected, type: "feature" } : null}
+        onClose={() => setSelected(null)}
+      />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {wf.items.map((item) => (
+      {/* Horizontal scroll — full width, like gallery and paintings */}
+      <div className="overflow-x-auto scrollbar-hide pb-4">
+        <div className="flex gap-5 px-6 md:px-12" style={{ minWidth: "min-content" }}>
+          {sortedItems.map((item) => (
             <div key={item.id}
-              className="bg-white shadow-sm rounded-lg p-6 flex flex-col cursor-pointer group hover:bg-opacity-80 transition-all"
+              className="bg-white shadow-sm rounded-lg overflow-hidden flex-shrink-0 w-[260px] sm:w-[300px] cursor-pointer group hover:shadow-md transition-all"
               onClick={() => setSelected(item)}>
-              {item.tag && (
-                <span className={`inline-block self-start font-mono text-[10px] tracking-editorial uppercase px-3 py-1 rounded-full mb-3 ${TAG_COLORS[item.tag] || "bg-flamingo text-white"}`}>
-                  {item.tag}
-                </span>
+              {item.imageUrl && (
+                <img src={item.imageUrl} alt={item.name} className="w-full h-40 object-cover" loading="lazy" />
               )}
-              <h3 className="font-display text-navy text-lg mb-2 group-hover:text-flamingo transition-colors">{item.name}</h3>
-              <p className="font-body text-navy opacity-60 text-sm leading-relaxed flex-1 line-clamp-2">{item.description}</p>
-              <p className="font-display text-flamingo text-lg mt-4">{item.price}</p>
+              <div className="p-5">
+                {item.tag && (
+                  <span className={`inline-block font-mono text-[10px] tracking-editorial uppercase px-3 py-1 rounded-full mb-3 ${TAG_COLORS[item.tag] || "bg-flamingo text-white"}`}>
+                    {item.tag}
+                  </span>
+                )}
+                <h3 className="font-display text-navy text-lg mb-2 group-hover:text-flamingo transition-colors">{item.name}</h3>
+                <p className="font-body text-navy opacity-60 text-sm leading-relaxed line-clamp-2">{item.description}</p>
+                {item.price > 0 && <p className="font-display text-flamingo text-lg mt-3">{item.price}</p>}
+              </div>
             </div>
           ))}
         </div>
+      </div>
 
-        <div className="text-center mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Link to="/menu" className="btn-secondary">View Full Menu</Link>
-          <Link to="/order" className="btn-primary">Order Now</Link>
-        </div>
+      <div className="text-center mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center px-6">
+        <Link to="/menu" className="btn-secondary">View Full Menu</Link>
+        <Link to="/order" className="btn-primary">Order Now</Link>
       </div>
     </section>
   );

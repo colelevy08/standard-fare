@@ -140,12 +140,13 @@ const ResyAvailability = () => {
       }
     }
 
-    // Nothing found
+    // Nothing found in 7-day window — still show a helpful CTA
     setData({
-      available: false,
-      message: "No tables available this week — check Resy for more dates",
+      available: true,
+      message: "Reserve on Resy — tables open up daily",
       slots: [],
       date: today,
+      source: "fallback",
     });
     setLoading(false);
   }, [fetchAvailability, manualDate]);
