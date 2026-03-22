@@ -16,8 +16,9 @@ const pressInitials = (text, bg = "#1B2B4B") => {
   return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="20" fill="${bg}"/><text x="64" y="64" text-anchor="middle" dominant-baseline="central" font-family="Georgia,serif" font-size="52" font-weight="bold" fill="#E8748A">${letters}</text></svg>`)}`;
 };
 
-// Supabase Storage base URL for all real Standard Fare photos
+// Supabase Storage base URLs
 const SB = "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos";
+const LB = "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/labels";
 
 const defaultSiteData = {
 
@@ -735,56 +736,56 @@ const defaultSiteData = {
       id: "btl1", name: "Château Margaux 2018", category: "wine",
       varietal: "Cabernet Sauvignon Blend", region: "Bordeaux, France",
       description: "A full-bodied red with layers of dark fruit, cedar, and silky tannins. Pairs beautifully with our dry-aged steak.",
-      price: 85, imageUrl: `${SB}/wine-sangiovese.jpg`,
+      price: 85, imageUrl: `${LB}/chateau-margaux.svg`,
       available: true, toastProductId: null,
     },
     {
       id: "btl2", name: "Cloudy Bay Sauvignon Blanc", category: "wine",
       varietal: "Sauvignon Blanc", region: "Marlborough, New Zealand",
       description: "Crisp and refreshing with notes of citrus, passionfruit, and fresh-cut grass.",
-      price: 42, imageUrl: "",
+      price: 42, imageUrl: `${LB}/cloudy-bay.svg`,
       available: true, toastProductId: null,
     },
     {
       id: "btl3", name: "Whispering Angel Rosé", category: "wine",
       varietal: "Rosé", region: "Côtes de Provence, France",
       description: "Pale pink with aromas of fresh strawberry and white peach. Light, elegant, and endlessly drinkable.",
-      price: 38, imageUrl: "",
+      price: 38, imageUrl: `${LB}/whispering-angel.svg`,
       available: true, toastProductId: null,
     },
     {
       id: "btl4", name: "Veuve Clicquot Brut", category: "wine",
       varietal: "Champagne", region: "Champagne, France",
       description: "Golden yellow with fine bubbles. Notes of toasted brioche, pear, and a long mineral finish.",
-      price: 72, imageUrl: "",
+      price: 72, imageUrl: `${LB}/veuve-clicquot.svg`,
       available: true, toastProductId: null,
     },
     {
       id: "btl5", name: "Sloop Brewing Juice Bomb", category: "beer",
       varietal: "IPA", region: "East Fishkill, NY",
       description: "A hazy, juicy IPA bursting with tropical hop flavor. Citrus-forward with a smooth, pillowy mouthfeel.",
-      price: 16, imageUrl: "",
+      price: 16, imageUrl: `${LB}/sloop-juice-bomb.svg`,
       available: true, toastProductId: null,
     },
     {
       id: "btl6", name: "Pilsner Urquell", category: "beer",
       varietal: "Pilsner", region: "Plzeň, Czech Republic",
       description: "The original pilsner. Golden, crisp, and balanced with a noble hop bitterness and bready malt character.",
-      price: 12, imageUrl: "",
+      price: 12, imageUrl: `${LB}/pilsner-urquell.svg`,
       available: true, toastProductId: null,
     },
     {
       id: "btl7", name: "Guinness Draught Stout", category: "beer",
       varietal: "Stout", region: "Dublin, Ireland",
       description: "Velvety dark with roasted barley, chocolate, and coffee notes. Creamy head, dry finish.",
-      price: 14, imageUrl: "",
+      price: 14, imageUrl: `${LB}/guinness-stout.svg`,
       available: true, toastProductId: null,
     },
     {
       id: "btl8", name: "Common Roots Brewing American Blonde", category: "beer",
       varietal: "Blonde Ale", region: "South Glens Falls, NY",
       description: "Light, easy-drinking blonde ale with a hint of honey and citrus. A local favorite.",
-      price: 14, imageUrl: "",
+      price: 14, imageUrl: `${LB}/common-roots.svg`,
       available: false, toastProductId: null,
     },
     {
