@@ -59,12 +59,6 @@ const defaultSiteData = {
         photo: "https://images.getbento.com/accounts/5595621cc83a57ef6a80e10126e2d090/media/images/40350Screen_Shot_2025-08-19_at_12.29.53_PM.png",
         bio: `Zac, a native of Louisiana, moved to New York City in 2009 to pursue a career in acting, performing on stages across NYC and the country. In 2015, he transitioned into the hospitality world, where his flair for storytelling found new expression through restaurant concepting and operations.\n\nZac has been instrumental in opening five acclaimed restaurants in New York City and London, including the flagship U.S. location of the UK-based Burger & Lobster. He worked alongside Michelin-starred chefs Dani García and Shaun Hergatt on high-profile projects such as CASA DANI at Hudson Yards and VESRTY in SoHo.\n\nIn the West Village, Zac led teams for Empellón Taqueria and da Toscano, where he worked under acclaimed chefs Alex Stupak and Michael Toscano. Da Toscano received national accolades from Esquire and Bloomberg for its inventive approach and intimate charm.\n\nAs founding partner of Bocage Champagne Bar in Saratoga Springs, Zac has shaped one of the region's most beloved destinations for sparkling wine and elevated hospitality. Under his creative direction, Bocage earned the New York State Restaurant Association's award for Best Social Media in 2023.\n\nWith Standard Fare, he brings sharp instincts and deep hospitality know-how to a concept that raises the bar — delivering comfort, style, and substance in a setting designed to leave a lasting impression.`,
       },
-      {
-        name: "Joe Michaud",
-        role: "Executive Chef",
-        photo: `${SB}/server-champagne.jpg`,
-        bio: `Chef Joe Michaud brings years of culinary expertise to Standard Fare, crafting the creative American menu that defines the restaurant's identity.\n\nWith a passion for elevating comfort food classics using exceptional ingredients and refined technique, Chef Joe leads the kitchen team in delivering memorable dining experiences every night.\n\nHis approach blends nostalgia with imagination — from the fennel-rubbed pork belly to the 8oz Australian Wagyu tenderloin, every dish reflects his commitment to quality and creativity.`,
-      },
     ],
     imageUrl: `${SB}/owners-sign.jpg`,
     bocageUrl: "https://www.instagram.com/bocagechampagnebar/",
