@@ -7,7 +7,7 @@ import supabase from "../lib/supabase";
 
 const STORAGE_KEY    = "standard_fare_site_data";
 const VERSION_KEY    = "standard_fare_data_version";
-const DATA_VERSION   = 14; // ← bumped: 67 real 5-star Google reviews, favicon fix
+const DATA_VERSION   = 15; // ← bumped: all stock photos replaced with real SF photos from Supabase Storage
 const SUPABASE_TABLE = "site_content";
 const SUPABASE_ROW   = 1;
 
