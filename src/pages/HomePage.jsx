@@ -525,7 +525,7 @@ const PressPreview = () => {
             className={`${ITEM_WIDTH} min-w-[220px] group block bg-navy-light border border-flamingo border-opacity-30
               rounded-lg overflow-hidden hover:border-flamingo hover:shadow-md transition-all duration-300`}>
             <div className="bg-navy flex items-center justify-center p-4 border-b border-cream border-opacity-10">
-              <img src="/sf-logo.svg" alt="Standard Fare" className="h-10 w-auto" />
+              <img src="https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-icon-white-on-navy.jpg" alt="Standard Fare" className="h-12 w-auto rounded" />
             </div>
             <div className="p-5">
               <p className="font-mono text-flamingo text-[10px] tracking-editorial uppercase mb-2">Standard Fare</p>

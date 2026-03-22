@@ -175,6 +175,15 @@ const PrintsPage = () => {
       {/* ── About the Artist ──────────────────────────────────── */}
       <div className="bg-cream-warm py-12">
         <div className="section-container max-w-3xl mx-auto px-6 flex flex-col md:flex-row items-center gap-8">
+          {/* Artist photo */}
+          <div className="w-48 h-48 md:w-56 md:h-56 rounded-2xl overflow-hidden flex-shrink-0 shadow-lg">
+            <img
+              src="https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/daniel-fairley-ducks.jpg"
+              alt="Daniel Fairley with his duck painting at Standard Fare"
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
           <div className="flex-1 text-center md:text-left">
             <p className="font-mono text-flamingo text-xs tracking-editorial uppercase mb-2">The Artist</p>
             <h2 className="font-display text-navy text-2xl mb-3">Daniel Fairley</h2>
@@ -184,7 +193,6 @@ const PrintsPage = () => {
               on the walls at Standard Fare, where diners can view — and purchase — his work in person. Each
               painting brings a sense of humor and energy that matches the creative spirit of the restaurant.
             </p>
-            {/* External artist links removed — purchases through Standard Fare only */}
           </div>
         </div>
       </div>
