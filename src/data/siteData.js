@@ -139,10 +139,10 @@ const defaultSiteData = {
     enabled: true,
     // Toast credentials are set as Vercel env vars (TOAST_API_KEY, TOAST_RESTAURANT_ID)
     manualItems: [
-      { name: "Dry-Aged NY Strip", category: "menu" },
-      { name: "Spicy Margarita", category: "menu" },
-      { name: "Château Margaux 2018", category: "bottles" },
-      { name: "Sloop Juice Bomb IPA", category: "bottles" },
+      { name: "Beef Short Rib", category: "menu" },
+      { name: "Mom's Meatloaf", category: "menu" },
+      { name: "Phila Street Low Life", category: "menu" },
+      { name: "Slow Burn", category: "menu" },
     ],
   },
 
@@ -273,10 +273,10 @@ const defaultSiteData = {
         {
           title: "Beer",
           items: [
-            { name: "Pabst Blue Ribbon", description: "", price: "6" },
-            { name: "Phila Street Low Life", description: "", price: "9" },
-            { name: "Guinness Extra Stout", description: "", price: "9" },
-            { name: "Abita Seasonal", description: "", price: "8" },
+            { name: "Pabst Blue Ribbon", description: "Classic American lager", price: "6" },
+            { name: "Phila Street Low Life", description: "Whitman Brewing Co. collab · Hazy IPA", price: "9" },
+            { name: "Guinness Extra Stout", description: "Rich, roasty Irish stout", price: "9" },
+            { name: "Abita Seasonal", description: "Rotating seasonal craft", price: "8" },
           ],
         },
       ],
@@ -760,6 +760,20 @@ const defaultSiteData = {
       description: "Light, easy-drinking blonde ale with a hint of honey and citrus. A local favorite.",
       price: 14, imageUrl: "https://images.unsplash.com/photo-1571613316887-6f8d5cbf7ef7?w=800&q=80",
       available: false, toastProductId: null,
+    },
+    {
+      id: "btl9", name: "Phila Street Low Life", category: "beer",
+      varietal: "Hazy IPA", region: "Whitman Brewing Co. · Saratoga Springs, NY",
+      description: "Our collaboration brew with Whitman Brewing Co. A hazy, juicy IPA named after our home on Phila Street. Tropical and citrus-forward.",
+      price: 9, imageUrl: "",
+      available: true, toastProductId: null,
+    },
+    {
+      id: "btl10", name: "Bocage Every Day Cuvée", category: "wine",
+      varietal: "Crémant de Bourgogne", region: "Burgundy, France",
+      description: "Our sister bar Bocage Champagne Bar's house sparkling wine. Fine bubbles, crisp apple and brioche notes. Perfect for any occasion.",
+      price: 18, imageUrl: "",
+      available: true, toastProductId: null,
     },
   ],
 
