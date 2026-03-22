@@ -11,10 +11,11 @@ import { Link } from "react-router-dom";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useSite } from "../../context/AdminContext";
 
+const SB = "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos";
 const FALLBACK_SLIDES = [
-  { id: 1, url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1800&q=85", alt: "Standard Fare dining room" },
-  { id: 2, url: "https://images.unsplash.com/photo-1600891964092-4316c288032e?w=1800&q=85", alt: "Beautiful dish at Standard Fare" },
-  { id: 3, url: "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=1800&q=85", alt: "Craft cocktails at Standard Fare" },
+  { id: 1, url: `${SB}/interior-evening-ducks.jpg`, alt: "Standard Fare evening atmosphere" },
+  { id: 2, url: `${SB}/interior-banquettes-fairley.jpg`, alt: "Standard Fare dining room" },
+  { id: 3, url: `${SB}/exterior-night.jpg`, alt: "Standard Fare at night" },
 ];
 
 const SLIDE_INTERVAL = 5000;
