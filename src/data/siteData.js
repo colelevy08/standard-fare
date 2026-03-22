@@ -20,9 +20,9 @@ const defaultSiteData = {
 
   // ── HERO SLIDESHOW ─────────────────────────────────────────────────────────
   heroSlides: [
-    { id: 1, url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-interior.jpg", alt: "Standard Fare interior with Daniel Fairley artwork" },
-    { id: 2, url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-discover-1.png", alt: "Standard Fare dining experience" },
-    { id: 3, url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-menu-unveil.jpg", alt: "Standard Fare menu and dishes" },
+    { id: 1, url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-interior-fairley.png", alt: "Standard Fare dining room with Daniel Fairley artwork, blue banquettes, and walnut tables" },
+    { id: 2, url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-interior.jpg", alt: "Standard Fare interior with artwork and warm lighting" },
+    { id: 3, url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-team.jpg", alt: "Standard Fare team — ownership and kitchen staff" },
   ],
 
   // ── HERO CONTENT ───────────────────────────────────────────────────────────
@@ -345,17 +345,12 @@ const defaultSiteData = {
   // upload directly via the admin panel (uploads go to Supabase Storage).
   // `url` = the image, `instagramUrl` = the post link on click/hover.
   gallery: [
-    { id: 1,  url: "https://images.unsplash.com/photo-1600891964092-4316c288032e?w=800&q=80", alt: "Fennel-rubbed pork belly, cannellini beans, salsa verde", comment: "Pork belly · cannellini ragu · salsa verde", instagramUrl: "https://www.instagram.com/p/DVwVBuUEmM3/", mediaType: "image" },
-    { id: 2,  url: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=800&q=80", alt: "Apollo's Praise wine tasting event", comment: "Apollo's Praise wine tasting — April 12", instagramUrl: "https://www.instagram.com/p/DVy51SIkqVz/", mediaType: "image" },
-    { id: 3,  url: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80", alt: "Standard Fare bar interior", comment: "Standard Fare, Saratoga Springs", instagramUrl: "https://www.instagram.com/p/DV6hQvokskw/", mediaType: "image" },
-    { id: 4,  url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80", alt: "Broiled oysters Bienville with mushroom and andouille", comment: "Broiled Oysters Bienville · mushroom · andouille · parmesan", instagramUrl: "https://www.instagram.com/p/DVtdNeCknLC/", mediaType: "image" },
-    { id: 5,  url: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&q=80", alt: "8oz Australian Wagyu tenderloin with bordelaise", comment: "8oz Australian Wagyu · beech mushroom bordelaise", instagramUrl: "https://www.instagram.com/p/DVlfcR1Ds7b/", mediaType: "image" },
-    { id: 6,  url: "https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=800&q=80", alt: "Wild mushroom risotto with saffron and parmesan", comment: "Wild Mushroom Risotto · saffron · parmesan · thyme", instagramUrl: "https://www.instagram.com/p/DVg_BzwE0Ns/", mediaType: "image" },
-    { id: 7,  url: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&q=80", alt: "Signature cocktails at the Standard Fare bar", comment: "Slow Burn · smoked blueberry · ginger beer", instagramUrl: "https://www.instagram.com/p/DVPEWKYk5Uu/", mediaType: "image" },
-    { id: 8,  url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80", alt: "Creative American dining at Standard Fare", comment: "Creative American dining — 21 Phila St", instagramUrl: "https://www.instagram.com/p/DVJ_5feki_N/", mediaType: "image" },
-    { id: 9,  url: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80", alt: "Every plate tells a story", comment: "Every plate tells a story", instagramUrl: "https://www.instagram.com/p/DVHZeSREkpy/", mediaType: "image" },
-    { id: 10, url: "https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=800&q=80", alt: "Brunch spread at Standard Fare", comment: "Brunch — Sat & Sun, 10AM–3PM", instagramUrl: "https://www.instagram.com/p/DU1i4tTEcNg/", mediaType: "image" },
-    { id: 11, url: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800&q=80", alt: "Housemade cocktail craft", comment: "Crafted with care, every time", instagramUrl: "https://www.instagram.com/p/DUdXPJxEVq7/", mediaType: "image" },
+    { id: 1,  url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-interior-fairley.png", alt: "Standard Fare dining room with blue banquettes and Daniel Fairley hamburger spaceship artwork", comment: "Blue banquettes · walnut tables · Daniel Fairley art", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 2,  url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-interior.jpg", alt: "Standard Fare interior with Daniel Fairley artwork and warm lighting", comment: "Standard Fare, 21 Phila St, Saratoga Springs", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 3,  url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-team.jpg", alt: "Standard Fare team — ownership and kitchen staff", comment: "Our team", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 4,  url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-milkshake.jpg", alt: "Go Shawty birthday milkshake with Fruity Pebbles and funfetti cupcake", comment: "Go Shawty, It's Your Birthday milkshake", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 5,  url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-discover-1.png", alt: "Standard Fare dining experience", comment: "Creative American Dining", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 6,  url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-menu-unveil.jpg", alt: "Standard Fare menu and dishes", comment: "New seasonal menu", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
   ],
 
   // ── PRESS ──────────────────────────────────────────────────────────────────
