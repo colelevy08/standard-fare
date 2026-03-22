@@ -22,7 +22,14 @@ const BottleModal = ({ bottle, onClose }) => {
       <div className="bg-cream rounded-lg overflow-hidden shadow-2xl max-w-3xl w-full flex flex-col md:flex-row"
         onClick={(e) => e.stopPropagation()}>
         <div className="md:w-1/2 flex-shrink-0">
-          <img src={bottle.imageUrl} alt={bottle.name} className="w-full h-64 md:h-full object-cover" />
+          {bottle.imageUrl ? (
+            <img src={bottle.imageUrl} alt={bottle.name} className="w-full h-64 md:h-full object-cover" />
+          ) : (
+            <div className="w-full h-64 md:h-full bg-gradient-to-b from-navy to-navy-dark flex flex-col items-center justify-center px-6">
+              <Wine size={40} className="text-flamingo opacity-40 mb-4" />
+              <p className="font-display text-cream text-xl text-center opacity-60">{bottle.name}</p>
+            </div>
+          )}
         </div>
         <div className="p-8 flex flex-col justify-between">
           <button onClick={onClose} className="self-end text-navy opacity-40 hover:opacity-80 mb-4">
@@ -79,8 +86,10 @@ const BottleCard = ({ bottle, onClick, isPopular }) => (
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy" />
       ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <Wine size={32} className="text-cream opacity-20" />
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-navy to-navy-dark px-4">
+          <Wine size={28} className="text-flamingo opacity-40 mb-3" />
+          <p className="font-display text-cream text-center text-sm leading-tight opacity-60">{bottle.name}</p>
+          <p className="font-mono text-cream text-[9px] tracking-editorial uppercase opacity-25 mt-2">{bottle.varietal}</p>
         </div>
       )}
       {isPopular && bottle.available && (

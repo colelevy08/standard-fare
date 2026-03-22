@@ -268,16 +268,31 @@ const ResyAvailability = () => {
         </div>
       )}
 
-      {/* View all on Resy */}
-      <a
-        href={resyUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark transition-colors"
-      >
-        <ExternalLink size={13} />
-        View all times on Resy
-      </a>
+      {/* No slots — show prominent reserve button */}
+      {!loading && !hasSlots && resyUrl && (
+        <a
+          href={resyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 bg-flamingo text-white font-body font-bold text-sm tracking-widest uppercase px-6 py-3 rounded mb-4
+                     hover:bg-flamingo-dark transition-colors"
+        >
+          Reserve a Table on Resy
+        </a>
+      )}
+
+      {/* View all on Resy — only when slots are showing */}
+      {hasSlots && (
+        <a
+          href={resyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 font-body text-sm text-flamingo hover:text-flamingo-dark transition-colors"
+        >
+          <ExternalLink size={13} />
+          View all times on Resy
+        </a>
+      )}
     </div>
   );
 };
