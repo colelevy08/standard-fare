@@ -16,13 +16,17 @@ const pressInitials = (text, bg = "#1B2B4B") => {
   return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="20" fill="${bg}"/><text x="64" y="64" text-anchor="middle" dominant-baseline="central" font-family="Georgia,serif" font-size="52" font-weight="bold" fill="#E8748A">${letters}</text></svg>`)}`;
 };
 
+// Supabase Storage base URL for all real Standard Fare photos
+const SB = "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos";
+
 const defaultSiteData = {
 
   // ── HERO SLIDESHOW ─────────────────────────────────────────────────────────
   heroSlides: [
-    { id: 1, url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-interior-fairley.png", alt: "Standard Fare dining room with Daniel Fairley artwork, blue banquettes, and walnut tables" },
-    { id: 2, url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-interior.jpg", alt: "Standard Fare interior with artwork and warm lighting" },
-    { id: 3, url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-team.jpg", alt: "Standard Fare team — ownership and kitchen staff" },
+    { id: 1, url: `${SB}/interior-evening-ducks.jpg`, alt: "Standard Fare evening atmosphere with Daniel Fairley duck painting, exposed brick, and guests dining" },
+    { id: 2, url: `${SB}/interior-banquettes-fairley.jpg`, alt: "Standard Fare dining room with blue banquettes and Daniel Fairley hamburger spaceship artwork" },
+    { id: 3, url: `${SB}/interior-bar-ducks.jpg`, alt: "Standard Fare bar area with walnut bar, white stools, and Daniel Fairley art" },
+    { id: 4, url: `${SB}/exterior-night.jpg`, alt: "Standard Fare storefront at night with warm glow" },
   ],
 
   // ── HERO CONTENT ───────────────────────────────────────────────────────────
@@ -56,7 +60,7 @@ const defaultSiteData = {
         bio: `Zac, a native of Louisiana, moved to New York City in 2009 to pursue a career in acting, performing on stages across NYC and the country. In 2015, he transitioned into the hospitality world, where his flair for storytelling found new expression through restaurant concepting and operations.\n\nZac has been instrumental in opening five acclaimed restaurants in New York City and London, including the flagship U.S. location of the UK-based Burger & Lobster. He worked alongside Michelin-starred chefs Dani García and Shaun Hergatt on high-profile projects such as CASA DANI at Hudson Yards and VESRTY in SoHo.\n\nIn the West Village, Zac led teams for Empellón Taqueria and da Toscano, where he worked under acclaimed chefs Alex Stupak and Michael Toscano. Da Toscano received national accolades from Esquire and Bloomberg for its inventive approach and intimate charm.\n\nAs founding partner of Bocage Champagne Bar in Saratoga Springs, Zac has shaped one of the region's most beloved destinations for sparkling wine and elevated hospitality. Under his creative direction, Bocage earned the New York State Restaurant Association's award for Best Social Media in 2023.\n\nWith Standard Fare, he brings sharp instincts and deep hospitality know-how to a concept that raises the bar — delivering comfort, style, and substance in a setting designed to leave a lasting impression.`,
       },
     ],
-    imageUrl: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-team.jpg",
+    imageUrl: `${SB}/owners-sign.jpg`,
     bocageUrl: "https://www.instagram.com/bocagechampagnebar/",
   },
 
@@ -345,12 +349,34 @@ const defaultSiteData = {
   // upload directly via the admin panel (uploads go to Supabase Storage).
   // `url` = the image, `instagramUrl` = the post link on click/hover.
   gallery: [
-    { id: 1,  url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-interior-fairley.png", alt: "Standard Fare dining room with blue banquettes and Daniel Fairley hamburger spaceship artwork", comment: "Blue banquettes · walnut tables · Daniel Fairley art", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
-    { id: 2,  url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-interior.jpg", alt: "Standard Fare interior with Daniel Fairley artwork and warm lighting", comment: "Standard Fare, 21 Phila St, Saratoga Springs", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
-    { id: 3,  url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-team.jpg", alt: "Standard Fare team — ownership and kitchen staff", comment: "Our team", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
-    { id: 4,  url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-milkshake.jpg", alt: "Go Shawty birthday milkshake with Fruity Pebbles and funfetti cupcake", comment: "Go Shawty, It's Your Birthday milkshake", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
-    { id: 5,  url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-discover-1.png", alt: "Standard Fare dining experience", comment: "Creative American Dining", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
-    { id: 6,  url: "https://peecuaxyygkvakcnjgoo.supabase.co/storage/v1/object/public/gallery/photos/sf-real-menu-unveil.jpg", alt: "Standard Fare menu and dishes", comment: "New seasonal menu", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 1,  url: `${SB}/interior-evening-ducks.jpg`, alt: "Standard Fare evening atmosphere with guests, duck painting, exposed brick", comment: "Evening at Standard Fare", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 2,  url: `${SB}/interior-banquettes-fairley.jpg`, alt: "Blue banquettes and Daniel Fairley hamburger spaceship artwork", comment: "Blue banquettes · Daniel Fairley art", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 3,  url: `${SB}/interior-bar-ducks.jpg`, alt: "Bar area with walnut bar, white stools, and duck painting", comment: "The bar at Standard Fare", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 4,  url: `${SB}/interior-booths-art.jpg`, alt: "Rust-colored booths with bird art gallery wall", comment: "Booths · bird prints · terrazzo floor", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 5,  url: `${SB}/beef-short-rib.jpg`, alt: "Beef Short Rib with braised red cabbage and sour cream mash", comment: "Beef Short Rib · braised red cabbage · mash", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 6,  url: `${SB}/moms-meatloaf.jpg`, alt: "Mom's Meatloaf with haricot vert, tomato relish, and mashed potatoes", comment: "Mom's Meatloaf · haricot vert · tomato relish", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 7,  url: `${SB}/standard-burger.jpg`, alt: "The Standard Burger with fries and ketchup", comment: "The Standard Burger · bacon jam · fries", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 8,  url: `${SB}/swedish-meatballs.jpg`, alt: "Swedish Meatballs with mushroom au poivre", comment: "Swedish Meatballs · lingonberry · shroom au poivre", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 9,  url: `${SB}/pork-belly-dish.jpg`, alt: "Fennel-rubbed pork belly with salsa verde", comment: "Pork Belly · cannellini · salsa verde", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 10, url: `${SB}/cocktail-martini.png`, alt: "Martini cocktail with olive garnish at the bar", comment: "Black Tie Gibson", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 11, url: `${SB}/cocktail-citrus.jpg`, alt: "Citrus Got Real cocktail with dried blood orange", comment: "Citrus Got Real · blood orange · agave", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 12, url: `${SB}/cocktail-old-fashioned-float.jpg`, alt: "A Good Old Fashioned Float with vanilla cold foam", comment: "A Good, Old Fashioned Float", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 13, url: `${SB}/milkshake-birthday.jpg`, alt: "Go Shawty birthday milkshake with sprinkles and funfetti cupcake", comment: "Go Shawty, It's Your Birthday", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 14, url: `${SB}/vegetable-napoleon.jpg`, alt: "Layered vegetable napoleon with zucchini, tomato, and mozzarella", comment: "Seasonal vegetable napoleon", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 15, url: `${SB}/pineapple-cake.jpg`, alt: "Pineapple upside down cake with vanilla ice cream", comment: "Pineapple Upside Down Cake · vanilla ice cream", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 16, url: `${SB}/exterior-day-awning.jpg`, alt: "Standard Fare storefront with cream awning on Phila Street", comment: "21 Phila St · Saratoga Springs", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 17, url: `${SB}/exterior-night.jpg`, alt: "Standard Fare at night with warm lighting", comment: "Evening on Phila Street", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 18, url: `${SB}/owners-sign.jpg`, alt: "Clark Gale and Zac Denham at the Standard Fare sign", comment: "Clark & Zac · Co-Founders", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 19, url: `${SB}/daniel-fairley-ducks.jpg`, alt: "Artist Daniel Fairley with his duck painting at Standard Fare", comment: "Daniel Fairley · our resident artist", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 20, url: `${SB}/group-dining-ducks.jpg`, alt: "Group dining in front of Daniel Fairley duck painting", comment: "Private dining at Standard Fare", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 21, url: `${SB}/server-champagne.jpg`, alt: "Server presenting champagne to guests", comment: "Tableside service", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 22, url: `${SB}/phila-street-4pack.jpg`, alt: "Phila Street Low Life Hazy IPA 4-pack with poured glass", comment: "Phila Street Low Life · Whitman Brewing Co.", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 23, url: `${SB}/bocage-cuvee-closeup.jpg`, alt: "Bocage Every Day Cuvée Crémant de Bourgogne label", comment: "Bocage Every Day Cuvée", instagramUrl: "https://www.instagram.com/bocagechampagnebar/", mediaType: "image" },
+    { id: 24, url: `${SB}/send-fries-branded.jpg`, alt: "Standard Fare branded burger box with Send Fries message", comment: "Send Fries? · Love at First Bite", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 25, url: `${SB}/branded-apron-mugs.jpg`, alt: "Yellow mugs stacked with SF branded apron", comment: "Standard Fare merch", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 26, url: `${SB}/welcome-sign.jpg`, alt: "Welcome Please Wait To Be Seated illuminated sign", comment: "Welcome to Standard Fare", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 27, url: `${SB}/exterior-pink-cart.jpg`, alt: "Standard Fare and Bocage storefronts with pink golf cart", comment: "Standard Fare & Bocage · 21 Phila St", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
+    { id: 28, url: `${SB}/storefront-illustration.jpg`, alt: "Watercolor illustration of Standard Fare storefront", comment: "Standard Fare · American Comfort Food", instagramUrl: "https://www.instagram.com/standardfaresaratoga/", mediaType: "image" },
   ],
 
   // ── PRESS ──────────────────────────────────────────────────────────────────
