@@ -76,6 +76,15 @@ const PrivateEventsPage = () => {
 
       if (!res.ok) throw new Error("Something went wrong. Please try again.");
 
+      // Store for admin event request log
+      try {
+        const requests = JSON.parse(localStorage.getItem("sf_event_requests") || "[]");
+        requests.unshift({
+          id: `req_${Date.now()}`, ...form,
+          status: "New", createdAt: new Date().toISOString(),
+        });
+        localStorage.setItem("sf_event_requests", JSON.stringify(requests));
+      } catch {}
       setSubmitted(true);
       setForm(INITIAL_FORM);
     } catch (err) {

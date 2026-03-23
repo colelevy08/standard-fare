@@ -739,23 +739,40 @@ const ReserveBanner = () => {
   );
 };
 
+// ── Color wrapper — applies admin-chosen section colors ───────────────────
+const ColorBlock = ({ sectionKey, children, defaultColor }) => {
+  const { siteData } = useSite();
+  const colorMap = {
+    navy: "bg-navy text-cream",
+    cream: "bg-cream text-navy",
+    "cream-warm": "bg-cream-warm text-navy",
+    flamingo: "bg-flamingo text-cream",
+    "navy-light": "bg-navy-light text-cream",
+    white: "bg-white text-navy",
+  };
+  const chosen = siteData.sectionColors?.[sectionKey] || defaultColor;
+  if (!chosen || chosen === defaultColor) return children; // no override — render as-is
+  // Wrap with color override div
+  return <div className={`${colorMap[chosen] || ""} [&_section]:!bg-transparent`}>{children}</div>;
+};
+
 // ── Full Homepage ─────────────────────────────────────────────────────────
 const HomePage = () => (
   <PageLayout>
     <SpecialsBanner />
     <HeroSection />
     <SeasonalCountdown />
-    <AboutSection />
-    <WeeklyFeatures />
-    <EventsPreview />
-    <BottlePreview />
-    <GalleryPreview />
-    <PrintsPreview />
-    <PressPreview />
+    <ColorBlock sectionKey="about" defaultColor="cream"><AboutSection /></ColorBlock>
+    <ColorBlock sectionKey="weeklyFeatures" defaultColor="cream"><WeeklyFeatures /></ColorBlock>
+    <ColorBlock sectionKey="events" defaultColor="navy"><EventsPreview /></ColorBlock>
+    <ColorBlock sectionKey="bottles" defaultColor="navy"><BottlePreview /></ColorBlock>
+    <ColorBlock sectionKey="gallery" defaultColor="navy"><GalleryPreview /></ColorBlock>
+    <ColorBlock sectionKey="paintings" defaultColor="cream"><PrintsPreview /></ColorBlock>
+    <ColorBlock sectionKey="testimonials" defaultColor="cream"><PressPreview /></ColorBlock>
     <HoursSection />
     <TestimonialsSection />
     <ContactSection />
-    <ReserveBanner />
+    <ColorBlock sectionKey="reserve" defaultColor="flamingo"><ReserveBanner /></ColorBlock>
   </PageLayout>
 );
 

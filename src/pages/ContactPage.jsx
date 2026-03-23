@@ -63,6 +63,12 @@ const ContactPage = () => {
       });
       const data = await res.json();
       if (data.success) {
+        // Store submission for admin inbox
+        try {
+          const submissions = JSON.parse(localStorage.getItem("sf_contact_submissions") || "[]");
+          submissions.unshift({ ...form, toEmail, date: new Date().toISOString() });
+          localStorage.setItem("sf_contact_submissions", JSON.stringify(submissions));
+        } catch {}
         setSubmitted(true);
       } else {
         // API couldn't send — open mailto as fallback
