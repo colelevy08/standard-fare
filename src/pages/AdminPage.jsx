@@ -43,6 +43,10 @@ import { logActivity } from "../lib/crmDb";
 import TemplatePicker, { EVENT_TEMPLATES, BLOG_TEMPLATES } from "../components/admin/ContentTemplates";
 import IntegrationsPanel from "../components/admin/IntegrationsPanel";
 import NotificationCenter from "../components/admin/NotificationCenter";
+import EmailHub from "../components/admin/EmailHub";
+import EventRequestLog from "../components/admin/EventRequestLog";
+import InvoiceGenerator from "../components/admin/InvoiceGenerator";
+import SectionColorPicker from "../components/admin/SectionColorPicker";
 
 // ── Sortable wrapper for drag-and-drop reorder ──────────────────────────
 const SortableItem = ({ id, children }) => {
@@ -141,6 +145,9 @@ const SECTION_GROUPS = [
   ]},
   { group: "CRM", icon: "👥", sections: [
     { id: "crm", title: "Guest CRM" },
+    { id: "emailhub", title: "Email Hub" },
+    { id: "eventrequests", title: "Event Requests" },
+    { id: "invoices", title: "Invoices" },
   ]},
   { group: "Content", icon: "📝", sections: [
     { id: "hero", title: "Hero — Text, Buttons & Slideshow" },
@@ -183,6 +190,7 @@ const SECTION_GROUPS = [
   ]},
   { group: "Settings", icon: "⚙️", sections: [
     { id: "settings", title: "Site Settings" },
+    { id: "sectioncolors", title: "Section Colors" },
     { id: "links", title: "External Links" },
     { id: "contact", title: "Contact Emails" },
   ]},
@@ -3948,6 +3956,9 @@ const AdminPage = () => {
               <span>👥</span> Guest CRM
             </p>
             <div className="mt-6"><AdminSection title="Guest CRM" id="crm" description="Manage guest relationships, dietary preferences, VIPs, and notes"><CRMPanel /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Email Hub" id="emailhub" description="All emails in one place — signups, contact forms, and subscribers"><EmailHub siteData={siteData} /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Event Requests" id="eventrequests" description="Chronological log of private event inquiries with status tracking"><EventRequestLog saveWithToast={saveWithToast} /></AdminSection></div>
+            <div className="mt-6"><AdminSection title="Invoices" id="invoices" description="Create professional invoices for private events, catering, and custom orders"><InvoiceGenerator /></AdminSection></div>
           </div>
 
           {/* ── CONTENT ─────────────────────────────────────────────── */}
@@ -4025,6 +4036,7 @@ const AdminPage = () => {
             <p className="font-mono text-flamingo/70 text-[11px] tracking-editorial uppercase mb-5 flex items-center gap-2 admin-group-label w-fit">
               <span>⚙️</span> Settings
             </p>
+            <div className="mt-6"><AdminSection title="Section Colors" id="sectioncolors" description="Change the background color of each homepage section — navy, cream, or flamingo"><SectionColorPicker siteData={siteData} saveWithToast={saveWithToast} /></AdminSection></div>
             <div className="mt-6"><AdminSection title="External Links" id="links" description="Resy, DoorDash, Toast, Instagram, and other URLs"><LinksEditor /></AdminSection></div>
             <div className="mt-6"><AdminSection title="Contact Emails" id="contact" description="Email addresses for general, press, and event inquiries"><ContactEditor /></AdminSection></div>
           </div>
