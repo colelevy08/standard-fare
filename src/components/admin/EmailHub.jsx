@@ -45,14 +45,31 @@ const EmailHub = ({ siteData }) => {
   const [addForm, setAddForm] = useState({ email: "", name: "", source: "manual" });
   const [importResult, setImportResult] = useState(null);
   const [selectedEmails, setSelectedEmails] = useState(new Set());
+  const [syncStatus, setSyncStatus] = useState(null);
 
   const loadEmails = useCallback(async () => {
     setLoading(true);
     const result = [];
+    let syncedSources = [];
+
+    // 1. Auto-pull from connected platforms (Resy, Toast, etc.)
+    try {
+      const syncRes = await fetch("/api/sync-emails");
+      if (syncRes.ok) {
+        const syncData = await syncRes.json();
+        (syncData.emails || []).forEach(e => result.push(e));
+        syncedSources = syncData.sources || [];
+        setSyncStatus({ sources: syncedSources, count: syncData.count || 0, syncedAt: syncData.syncedAt });
+      }
+    } catch {}
+
+    // 2. Supabase email signups
     const { data: supabaseSignups } = await getEmailSignups();
     (supabaseSignups || []).forEach(s => {
       result.push({ email: s.email, name: "", source: s.source || "website", date: s.signed_up_at || "" });
     });
+
+    // 3. localStorage sources
     try {
       JSON.parse(localStorage.getItem("sf_email_signups") || "[]").forEach(s => {
         result.push({ email: s.email, name: "", source: s.source || "website", date: s.date || s.signed_up_at || "" });
@@ -195,6 +212,17 @@ const EmailHub = ({ siteData }) => {
         </div>
       </div>
 
+      {/* Auto-sync status */}
+      {syncStatus && syncStatus.sources.length > 0 && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+          <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+          <p className="font-body text-xs text-green-700 flex-1">
+            Auto-synced {syncStatus.count} email{syncStatus.count !== 1 ? "s" : ""} from {syncStatus.sources.join(", ")}
+          </p>
+          <span className="font-mono text-[9px] text-green-600/50">{new Date(syncStatus.syncedAt).toLocaleTimeString()}</span>
+        </div>
+      )}
+
       {/* Quick actions bar */}
       <div className="flex flex-wrap gap-2 mb-5">
         <button onClick={() => setShowAdd(!showAdd)}
@@ -335,13 +363,16 @@ const EmailHub = ({ siteData }) => {
 
       {/* Help text */}
       <div className="mt-5 p-4 bg-navy/[0.02] rounded-2xl border border-navy/[0.04]">
-        <p className="font-mono text-[9px] tracking-editorial uppercase text-navy/25 mb-2">How to import emails</p>
+        <p className="font-mono text-[9px] tracking-editorial uppercase text-navy/25 mb-2">How email sync works</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-body text-navy/40">
-          <p><strong className="text-navy/50">Resy:</strong> OS Portal → Guest Book → Export CSV</p>
-          <p><strong className="text-navy/50">Toast:</strong> Marketing → Guest List → Download</p>
-          <p><strong className="text-navy/50">Google:</strong> Business Profile → Customers → Export</p>
-          <p><strong className="text-navy/50">Printify:</strong> Orders → Export → CSV</p>
+          <p><strong className="text-green-600">Resy:</strong> {syncStatus?.sources?.includes("resy") ? "Auto-syncing reservation guests" : "Set RESY_API_KEY in Vercel to auto-sync"}</p>
+          <p><strong className="text-orange-600">Toast:</strong> {syncStatus?.sources?.includes("toast") ? "Auto-syncing order customers" : "Set TOAST_API_KEY in Vercel to auto-sync"}</p>
+          <p><strong className="text-navy/50">Website:</strong> Signups + contact forms sync automatically</p>
+          <p><strong className="text-navy/50">CRM:</strong> Guest emails sync automatically</p>
         </div>
+        <p className="font-body text-[10px] text-navy/25 mt-2">
+          Emails are auto-pulled every time you open this page. You can also manually add or import CSV.
+        </p>
       </div>
     </div>
   );
